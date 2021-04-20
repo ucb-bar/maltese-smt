@@ -21,6 +21,8 @@ libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.6" % "test"
 // for now we depend on treadle for its VCD library
 resolvers += Resolver.sonatypeRepo("snapshots")
 libraryDependencies += "edu.berkeley.cs" %% "treadle" % "1.5-SNAPSHOT"
+// for now we also depend on firrtl for the SMT conversion feature
+libraryDependencies += "edu.berkeley.cs" %% "firrtl" % "1.5-SNAPSHOT"
 
 // source layout
 scalaSource in Compile := baseDirectory.value / "src"
