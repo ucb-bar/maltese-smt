@@ -1,2 +1,16 @@
-*.class
-*.log
+# scala
+/project/target
+/project/project
+/target/
+
+# IDE
+.project
+.classpath
+.settings
+.idea
+*.iml
+/*.bsp/
+
+# Visual Studio Code
+.bloop/
+.metals/
