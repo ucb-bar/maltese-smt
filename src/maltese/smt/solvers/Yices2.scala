@@ -7,7 +7,6 @@ package maltese.smt.solvers
 import maltese.smt._
 import scala.collection.mutable
 
-
 object Yices2 {
   def apply(logic: Solver.Logic = QF_ABV): Yices2 = {
     val lib = Yices2Api.lib
@@ -18,11 +17,12 @@ object Yices2 {
     y.setLogic(logic)
     y
   }
-  private def assertNoError[T](v: T): T = { Yices2Api.assertNoError() ; v }
+  private def assertNoError[T](v: T): T = { Yices2Api.assertNoError(); v }
   private def bitArrayToBigInt(a: Array[Int]): BigInt = BigInt(a.reverseIterator.map(_.toString).mkString(""), 2)
 }
 
-class Yices2 private(lib: Yices2Api, conf: Yices2Api.ConfigT, ctx: Yices2Api.ContextT, params: Yices2Api.ParamsT) extends Solver {
+class Yices2 private (lib: Yices2Api, conf: Yices2Api.ConfigT, ctx: Yices2Api.ContextT, params: Yices2Api.ParamsT)
+    extends Solver {
   override def name = "yices2"
   override def supportsQuantifiers = false
   override def supportsConstArrays = false
@@ -32,18 +32,19 @@ class Yices2 private(lib: Yices2Api, conf: Yices2Api.ConfigT, ctx: Yices2Api.Con
 
   private var _stackDepth: Int = 0
   override def stackDepth = _stackDepth
-  override def push(): Unit = { assertNoError(lib.yices_push(ctx)) ;  _stackDepth += 1 }
-  override def pop(): Unit = { assertNoError(lib.yices_pop(ctx)) ;  _stackDepth -= 1 }
-  override def assert(expr: BVExpr): Unit = assertNoError(lib.yices_assert_formula(ctx, convert(expr)))
+  override def push(): Unit = { assertNoError(lib.yices_push(ctx)); _stackDepth += 1 }
+  override def pop(): Unit = { assertNoError(lib.yices_pop(ctx)); _stackDepth -= 1 }
+  override def assert(expr:  BVExpr): Unit = assertNoError(lib.yices_assert_formula(ctx, convert(expr)))
   override def queryModel(e: BVSymbol): Option[BigInt] = model match {
     case None => None
-    case Some(m) => symbols.get(e.name).map { info =>
-      require(info.sym.isInstanceOf[BVSymbol])
-      require(info.sym.asInstanceOf[BVSymbol].width == e.width)
-      val valueArray = new Array[Int](e.width)
-      assertNoError(lib.yices_get_bv_value(m, info.term, valueArray))
-      bitArrayToBigInt(valueArray)
-    }
+    case Some(m) =>
+      symbols.get(e.name).map { info =>
+        require(info.sym.isInstanceOf[BVSymbol])
+        require(info.sym.asInstanceOf[BVSymbol].width == e.width)
+        val valueArray = new Array[Int](e.width)
+        assertNoError(lib.yices_get_bv_value(m, info.term, valueArray))
+        bitArrayToBigInt(valueArray)
+      }
   }
 
   // TODO
@@ -51,11 +52,11 @@ class Yices2 private(lib: Yices2Api, conf: Yices2Api.ConfigT, ctx: Yices2Api.Con
   override def getValue(e: ArrayExpr) = ???
 
   override def runCommand(cmd: SMTCommand): Unit = cmd match {
-    case Comment(_) => // ignore
-    case SetLogic(logic) => setLogic(logic)
-    case DefineFunction(name, args, e) => ???
-    case DeclareFunction(sym, args) => ???
-    case DeclareUninterpretedSort(name) => ???
+    case Comment(_)                            => // ignore
+    case SetLogic(logic)                       => setLogic(logic)
+    case DefineFunction(name, args, e)         => ???
+    case DeclareFunction(sym, args)            => ???
+    case DeclareUninterpretedSort(name)        => ???
     case DeclareUninterpretedSymbol(name, tpe) => ???
   }
 
@@ -79,14 +80,14 @@ class Yices2 private(lib: Yices2Api, conf: Yices2Api.ConfigT, ctx: Yices2Api.Con
   override protected def doCheck(produceModel: Boolean): SolverResult = {
     freeModel()
     assertNoError(lib.yices_check_context(ctx, params)) match {
-      case Yices2Api.STATUS_IDLE => throw new RuntimeException("Unexpected yices return: STATUS_IDLE")
-      case Yices2Api.STATUS_SEARCHING => throw new RuntimeException("Unexpected yices return: STATUS_SEARCHING")
+      case Yices2Api.STATUS_IDLE        => throw new RuntimeException("Unexpected yices return: STATUS_IDLE")
+      case Yices2Api.STATUS_SEARCHING   => throw new RuntimeException("Unexpected yices return: STATUS_SEARCHING")
       case Yices2Api.STATUS_INTERRUPTED => throw new RuntimeException("Unexpected yices return: STATUS_INTERRUPTED")
-      case Yices2Api.STATUS_ERROR => throw new RuntimeException("Unexpected yices return: STATUS_ERROR")
+      case Yices2Api.STATUS_ERROR       => throw new RuntimeException("Unexpected yices return: STATUS_ERROR")
       case Yices2Api.STATUS_SAT =>
         model = Some(assertNoError(lib.yices_get_model(ctx, 0)))
         IsSat
-      case Yices2Api.STATUS_UNSAT => IsUnSat
+      case Yices2Api.STATUS_UNSAT   => IsUnSat
       case Yices2Api.STATUS_UNKNOWN => IsUnknown
     }
   }
@@ -102,10 +103,10 @@ class Yices2 private(lib: Yices2Api, conf: Yices2Api.ConfigT, ctx: Yices2Api.Con
     // nullary
     case s: BVSymbol => symbol2Yices(s)
     case BVLiteral(value, 1) =>
-      assertNoError(if(value == 1) lib.yices_true() else lib.yices_false())
+      assertNoError(if (value == 1) lib.yices_true() else lib.yices_false())
     case BVLiteral(value, width) =>
       assertNoError(
-        if(width < 64) lib.yices_bvconst_int64(width, value.toLong)
+        if (width < 64) lib.yices_bvconst_int64(width, value.toLong)
         else lib.yices_parse_bvbin(value.toString(2))
       )
 
@@ -118,7 +119,8 @@ class Yices2 private(lib: Yices2Api, conf: Yices2Api.ConfigT, ctx: Yices2Api.Con
     case BVSlice(e, hi, lo) if lo == 0 && (hi - 1) == e.width => convert(e)
     case BVSlice(e, hi, lo) =>
       val r = assertNoError(lib.yices_bvextract(convert(e), lo, hi))
-      if(lo == hi) { toBool(r) } else { r }
+      if (lo == hi) { toBool(r) }
+      else { r }
     case BVNot(e) if e.width == 1 =>
       assertNoError(lib.yices_not(convert(e)))
     case BVNot(e) =>
@@ -150,22 +152,23 @@ class Yices2 private(lib: Yices2Api, conf: Yices2Api.ConfigT, ctx: Yices2Api.Con
     case BVOp(op, a, b) =>
       val (nA, nB) = (convertToBV(a), convertToBV(b))
       val r = assertNoError(op match {
-        case maltese.smt.Op.And => lib.yices_bvand2(nA, nB)
-        case maltese.smt.Op.Or => lib.yices_bvor2(nA, nB)
-        case maltese.smt.Op.Xor => lib.yices_bvxor2(nA, nB)
-        case maltese.smt.Op.ShiftLeft => lib.yices_bvshl(nA, nB)
+        case maltese.smt.Op.And                  => lib.yices_bvand2(nA, nB)
+        case maltese.smt.Op.Or                   => lib.yices_bvor2(nA, nB)
+        case maltese.smt.Op.Xor                  => lib.yices_bvxor2(nA, nB)
+        case maltese.smt.Op.ShiftLeft            => lib.yices_bvshl(nA, nB)
         case maltese.smt.Op.ArithmeticShiftRight => lib.yices_bvashr(nA, nB)
-        case maltese.smt.Op.ShiftRight => lib.yices_bvlshr(nA, nB)
-        case maltese.smt.Op.Add => lib.yices_bvadd(nA, nB)
-        case maltese.smt.Op.Mul => lib.yices_bvmul(nA, nB)
-        case maltese.smt.Op.SignedDiv =>lib.yices_bvsdiv(nA, nB)
-        case maltese.smt.Op.UnsignedDiv =>lib.yices_bvdiv(nA, nB)
-        case maltese.smt.Op.SignedMod =>lib.yices_bvsmod(nA, nB)
-        case maltese.smt.Op.SignedRem =>lib.yices_bvsrem(nA, nB)
-        case maltese.smt.Op.UnsignedRem =>lib.yices_bvrem(nA, nB)
-        case maltese.smt.Op.Sub =>lib.yices_bvsub(nA, nB)
+        case maltese.smt.Op.ShiftRight           => lib.yices_bvlshr(nA, nB)
+        case maltese.smt.Op.Add                  => lib.yices_bvadd(nA, nB)
+        case maltese.smt.Op.Mul                  => lib.yices_bvmul(nA, nB)
+        case maltese.smt.Op.SignedDiv            => lib.yices_bvsdiv(nA, nB)
+        case maltese.smt.Op.UnsignedDiv          => lib.yices_bvdiv(nA, nB)
+        case maltese.smt.Op.SignedMod            => lib.yices_bvsmod(nA, nB)
+        case maltese.smt.Op.SignedRem            => lib.yices_bvsrem(nA, nB)
+        case maltese.smt.Op.UnsignedRem          => lib.yices_bvrem(nA, nB)
+        case maltese.smt.Op.Sub                  => lib.yices_bvsub(nA, nB)
       })
-      if(a.width == 1) { toBool(r) } else { r }
+      if (a.width == 1) { toBool(r) }
+      else { r }
     case BVConcat(a, b) =>
       assertNoError(lib.yices_bvconcat2(convertToBV(a), convertToBV(b)))
     case BVImplies(a, b) =>
@@ -182,7 +185,8 @@ class Yices2 private(lib: Yices2Api, conf: Yices2Api.ConfigT, ctx: Yices2Api.Con
 
   /** ensures that the result will be a bit vector */
   private def convertToBV(expr: BVExpr): Yices2Api.TermT =
-    if(expr.width == 1) { toBitVector(convert(expr)) } else { convert(expr) }
+    if (expr.width == 1) { toBitVector(convert(expr)) }
+    else { convert(expr) }
 
   private def toBool(t: Yices2Api.TermT): Yices2Api.TermT = {
     val one = assertNoError(lib.yices_bvconst_int32(1, 1))
@@ -197,7 +201,7 @@ class Yices2 private(lib: Yices2Api, conf: Yices2Api.ConfigT, ctx: Yices2Api.Con
 
   private def symbol2Yices(s: SMTSymbol): Yices2Api.TermT = {
     symbols.get(s.name) match {
-      case Some(info) => require(info.sym == s) ; info.term
+      case Some(info) => require(info.sym == s); info.term
       case None => {
         val typ = typ2Yices(s)
         val term = assertNoError(lib.yices_new_uninterpreted_term(typ))
@@ -208,7 +212,7 @@ class Yices2 private(lib: Yices2Api, conf: Yices2Api.ConfigT, ctx: Yices2Api.Con
   }
 
   private def bvType(width: Int): Yices2Api.TypeT =
-    assertNoError(if(width == 1) lib.yices_bool_type() else lib.yices_bv_type(width))
+    assertNoError(if (width == 1) lib.yices_bool_type() else lib.yices_bv_type(width))
 
   private def typ2Yices(e: SMTExpr): Yices2Api.TypeT = e match {
     case b: BVExpr => bvType(b.width)
@@ -217,6 +221,5 @@ class Yices2 private(lib: Yices2Api, conf: Yices2Api.ConfigT, ctx: Yices2Api.Con
       val data = bvType(a.dataWidth)
       lib.yices_function_type(1, Array(index), data)
   }
-
 
 }

@@ -11,7 +11,7 @@ import scala.collection.mutable
 
 object Analysis {
   def findSymbols(e: SMTExpr): List[SMTSymbol] = e match {
-    case s: BVSymbol => List(s)
+    case s: BVSymbol    => List(s)
     case s: ArraySymbol => List(s)
     case other => other.children.flatMap(findSymbols)
   }
@@ -27,8 +27,8 @@ object Analysis {
   }
 
   private def countUses(e: SMTExpr)(implicit useCount: mutable.Map[String, Int]): Unit = e match {
-    case BVSymbol(name, _) => useCount(name) += 1
+    case BVSymbol(name, _)       => useCount(name) += 1
     case ArraySymbol(name, _, _) => useCount(name) += 1
-    case other => other.foreachExpr(countUses)
+    case other                   => other.foreachExpr(countUses)
   }
 }

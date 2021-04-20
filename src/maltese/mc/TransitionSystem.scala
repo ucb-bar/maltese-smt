@@ -12,7 +12,7 @@ case class State(sym: SMTSymbol, init: Option[SMTExpr], next: Option[SMTExpr]) {
 }
 case class Signal(name: String, e: SMTExpr, lbl: SignalLabel = IsNode) {
   def toSymbol: SMTSymbol = SMTSymbol.fromExpr(name, e)
-  def sym: SMTSymbol = toSymbol
+  def sym:      SMTSymbol = toSymbol
 }
 case class TransitionSystem(name: String, inputs: List[BVSymbol], states: List[State], signals: List[Signal]) {
   def serialize: String = TransitionSystem.serialize(this)
@@ -39,14 +39,19 @@ object TransitionSystem {
     (Iterator(sys.name) ++
       sys.inputs.map(i => s"input ${i.name} : ${SMTExpr.serializeType(i)}") ++
       sys.signals.map(s => s"${SignalLabel.labelToString(s.lbl)} ${s.name} : ${SMTExpr.serializeType(s.e)} = ${s.e}") ++
-      sys.states.map(serialize)
-      ).mkString("\n")
+      sys.states.map(serialize)).mkString("\n")
   }
 
   def serialize(s: State): String = {
     s"state ${s.sym.name} : ${SMTExpr.serializeType(s.sym)}" +
-      (s.init match { case None => "" case Some(init) => s"\n  [init] ${init}" }) +
-      (s.next match { case None => "" case Some(next) => s"\n  [next] ${next}"})
+      (s.init match {
+        case None       => ""
+        case Some(init) => s"\n  [init] ${init}"
+      }) +
+      (s.next match {
+        case None       => ""
+        case Some(next) => s"\n  [next] ${next}"
+      })
   }
 
   /** prefixes all signal names with the name of the transition system */
@@ -62,12 +67,13 @@ object TransitionSystem {
   }
 
   private def rename(map: Map[String, String])(e: SMTExpr): SMTExpr = e match {
-    case sym : SMTSymbol => sym.rename(map.getOrElse(sym.name, sym.name))
+    case sym: SMTSymbol => sym.rename(map.getOrElse(sym.name, sym.name))
     case other => other.mapExpr(rename(map))
   }
 
   def combine(name: String, sys: List[TransitionSystem]): TransitionSystem = {
-    TransitionSystem(name,
+    TransitionSystem(
+      name,
       inputs = sys.flatMap(_.inputs),
       states = sys.flatMap(_.states),
       signals = sys.flatMap(_.signals)
@@ -124,16 +130,16 @@ object TransitionSystem {
   }
 
   def analyzeFeatures(sys: TransitionSystem): TransitionSystemFeatures =
-    systemExpressions(sys).map(analyzeFeatures).reduce((a,b) => a | b)
+    systemExpressions(sys).map(analyzeFeatures).reduce((a, b) => a | b)
 
   def analyzeFeatures(e: smt.SMTExpr): TransitionSystemFeatures = {
     val info = e match {
-      case fa: smt.BVForall => Some(HasQuantifier)
-      case a: smt.ArrayExpr => Some(HasArrays)
+      case fa: smt.BVForall  => Some(HasQuantifier)
+      case a:  smt.ArrayExpr => Some(HasArrays)
       case _: smt.BVFunctionCall | _: smt.ArrayFunctionCall => Some(HasUF)
       case _ => None
     }
-    (e.children.map(analyzeFeatures) ++ info).foldLeft(Base)((a,b) => a | b)
+    (e.children.map(analyzeFeatures) ++ info).foldLeft(Base)((a, b) => a | b)
   }
   private val HasQuantifier = TransitionSystemFeatures(true, false, false)
   private val HasArrays = TransitionSystemFeatures(false, true, false)

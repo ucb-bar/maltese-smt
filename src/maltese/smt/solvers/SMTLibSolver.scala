@@ -5,7 +5,15 @@
 package maltese.smt.solvers
 
 import maltese.smt
-import maltese.smt.{Comment, DeclareFunction, DeclareUninterpretedSort, DeclareUninterpretedSymbol, DefineFunction, SMTCommand, SetLogic}
+import maltese.smt.{
+  Comment,
+  DeclareFunction,
+  DeclareUninterpretedSort,
+  DeclareUninterpretedSymbol,
+  DefineFunction,
+  SMTCommand,
+  SetLogic
+}
 import maltese.smt.solvers.Solver.Logic
 import maltese.smt.solvers.uclid.InteractiveProcess
 
@@ -31,11 +39,10 @@ class Z3SMTLib extends SMTLibSolver(List("z3", "-in")) {
 
   // Z3 only supports array (as const ...) when the logic is set to ALL
   override protected def doSetLogic(logic: Logic): Unit = getLogic match {
-    case None => writeCommand("(set-logic ALL)")
+    case None    => writeCommand("(set-logic ALL)")
     case Some(_) => // ignore
   }
 }
-
 
 /** provides basic facilities to interact with any SMT solver that supports a SMTLib base textual interface */
 abstract class SMTLibSolver(cmd: List[String]) extends Solver {
@@ -61,7 +68,7 @@ abstract class SMTLibSolver(cmd: List[String]) extends Solver {
     writeCommand(cmd)
     readResponse() match {
       case Some(strModel) => SMTLibResponseParser.parseValue(strModel.trim)
-      case None => throw new RuntimeException(s"Solver ${name} did not reply to $cmd")
+      case None           => throw new RuntimeException(s"Solver ${name} did not reply to $cmd")
     }
   }
   override def getValue(e: smt.ArrayExpr): Seq[(Option[BigInt], BigInt)] = {
@@ -69,15 +76,15 @@ abstract class SMTLibSolver(cmd: List[String]) extends Solver {
     writeCommand(cmd)
     readResponse() match {
       case Some(strModel) => SMTLibResponseParser.parseMemValue(strModel.trim)
-      case None => throw new RuntimeException(s"Solver ${name} did not reply to $cmd")
+      case None           => throw new RuntimeException(s"Solver ${name} did not reply to $cmd")
     }
   }
   override def runCommand(cmd: SMTCommand): Unit = cmd match {
-    case Comment(_) => // ignore comments
+    case Comment(_)      => // ignore comments
     case SetLogic(logic) => setLogic(logic)
-    case c: DefineFunction => writeCommand(serialize(c))
-    case c: DeclareFunction => writeCommand(serialize(c))
-    case c: DeclareUninterpretedSort => writeCommand(serialize(c))
+    case c: DefineFunction             => writeCommand(serialize(c))
+    case c: DeclareFunction            => writeCommand(serialize(c))
+    case c: DeclareUninterpretedSort   => writeCommand(serialize(c))
     case c: DeclareUninterpretedSymbol => writeCommand(serialize(c))
   }
 
@@ -88,7 +95,7 @@ abstract class SMTLibSolver(cmd: List[String]) extends Solver {
     proc.kill()
   }
   override protected def doSetLogic(logic: Logic): Unit = getLogic match {
-    case None => writeCommand(serialize(smt.SetLogic(logic)))
+    case None      => writeCommand(serialize(smt.SetLogic(logic)))
     case Some(old) => require(logic == old, s"Cannot change logic from $old to $logic")
   }
   override protected def doCheck(produceModel: Boolean): SolverResult = {
@@ -96,9 +103,9 @@ abstract class SMTLibSolver(cmd: List[String]) extends Solver {
     readResponse() match {
       case Some(res) =>
         res.stripLineEnd match {
-          case "sat" => IsSat
+          case "sat"   => IsSat
           case "unsat" => IsUnSat
-          case other => throw new RuntimeException(s"Unexpected result from SMT solver: $other")
+          case other   => throw new RuntimeException(s"Unexpected result from SMT solver: $other")
         }
       case None =>
         throw new RuntimeException("Unexpected EOF result from SMT solver.")
@@ -106,18 +113,16 @@ abstract class SMTLibSolver(cmd: List[String]) extends Solver {
   }
 
   private def serialize(e: smt.SMTExpr): String = smt.SMTLibSerializer.serialize(e)
-  private def serialize(c: SMTCommand): String = smt.SMTLibSerializer.serialize(c)
+  private def serialize(c: SMTCommand):  String = smt.SMTLibSerializer.serialize(c)
 
   private val proc = new InteractiveProcess(cmd, true)
-  protected def writeCommand(str : String): Unit = {
-    if(debug) println(s"$str")
+  protected def writeCommand(str: String): Unit = {
+    if (debug) println(s"$str")
     proc.writeInput(str + "\n")
   }
-  protected def readResponse() : Option[String] = {
+  protected def readResponse(): Option[String] = {
     val r = proc.readOutput()
-    if(debug) println(s"<- $r")
+    if (debug) println(s"<- $r")
     r
   }
 }
-
-

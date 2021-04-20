@@ -4,13 +4,12 @@
 
 package maltese.smt.solvers
 
-
 object SMTLibResponseParser {
   def parseValue(v: String): Option[BigInt] = {
     val tree = SExprParser.parse(v)
     tree match {
       case SExprNode(List(SExprNode(List(_, SExprLeaf(valueStr))))) => parseBVLiteral(valueStr)
-      case _ => throw new NotImplementedError(s"Unexpected response: $v")
+      case _                                                        => throw new NotImplementedError(s"Unexpected response: $v")
     }
   }
 
@@ -20,7 +19,7 @@ object SMTLibResponseParser {
     val tree = SExprParser.parse(v)
     tree match {
       case SExprNode(List(SExprNode(List(_, value)))) => parseMem(value, Map())
-      case _ => throw new NotImplementedError(s"Unexpected response: $v")
+      case _                                          => throw new NotImplementedError(s"Unexpected response: $v")
     }
   }
 
@@ -37,25 +36,29 @@ object SMTLibResponseParser {
     case SExprLeaf(variable) =>
       assert(ctx.contains(variable), s"Undefined variable: $variable. " + ctx.keys.mkString(", "))
       ctx(variable)
-    case SExprNode(List(SExprLeaf("lambda"), SExprNode(List(SExprNode(List(SExprLeaf(v0), indexTpe)))),
-    SExprNode(List(SExprLeaf("="), SExprLeaf(v1), SExprLeaf(indexStr))))) if v0 == v1 =>
+    case SExprNode(
+          List(
+            SExprLeaf("lambda"),
+            SExprNode(List(SExprNode(List(SExprLeaf(v0), indexTpe)))),
+            SExprNode(List(SExprLeaf("="), SExprLeaf(v1), SExprLeaf(indexStr)))
+          )
+        ) if v0 == v1 =>
       // example: (lambda ((x!1 (_ BitVec 5))) (= x!1 #b00000))
       List((None, BigInt(0)), (Some(parseBVLiteral(indexStr).get), BigInt(1)))
     case other => throw new NotImplementedError(s"TODO: $value")
   }
 
   private def parseBVLiteral(valueStr: String): Option[BigInt] = {
-    if(valueStr == "true") { Some(BigInt(1)) }
-    else if(valueStr == "false") { Some(BigInt(0)) }
-    else if(valueStr == "???") { None }
-    else if(valueStr.startsWith("#b")) { Some(BigInt(valueStr.drop(2), 2)) }
-    else if(valueStr.startsWith("#x")) { Some(BigInt(valueStr.drop(2), 16)) }
+    if (valueStr == "true") { Some(BigInt(1)) }
+    else if (valueStr == "false") { Some(BigInt(0)) }
+    else if (valueStr == "???") { None }
+    else if (valueStr.startsWith("#b")) { Some(BigInt(valueStr.drop(2), 2)) }
+    else if (valueStr.startsWith("#x")) { Some(BigInt(valueStr.drop(2), 16)) }
     else {
       throw new NotImplementedError(s"Unsupported number format: $valueStr")
     }
   }
 }
-
 
 sealed trait SExpr
 case class SExprNode(children: List[SExpr]) extends SExpr {
@@ -76,7 +79,7 @@ object SExprParser {
       .toList
 
     assert(tokens.nonEmpty)
-    if(tokens.head == "(") {
+    if (tokens.head == "(") {
       parseSExpr(tokens.tail)._1
     } else {
       assert(tokens.tail.isEmpty)
@@ -87,7 +90,7 @@ object SExprParser {
   private def parseSExpr(tokens: List[String]): (SExpr, List[String]) = {
     var t = tokens
     var elements = List[SExpr]()
-    while(t.nonEmpty) {
+    while (t.nonEmpty) {
       t.head match {
         case "(" =>
           val (child, nt) = parseSExpr(t.tail)

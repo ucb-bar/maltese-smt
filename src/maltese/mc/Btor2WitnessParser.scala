@@ -33,25 +33,33 @@ object Btor2WitnessParser {
       val is_bv = parts.length == 3
       assert(is_array || is_bv, s"Expected assignment to consist of 3-4 parts, not: $parts")
       val ii = Integer.parseUnsignedInt(parts.head)
-      val (value, index) = if(is_array) {
+      val (value, index) = if (is_array) {
         assert(parts(1).startsWith("[") && parts(1).endsWith("]"), s"Expected `[index]`, not `${parts(1)}` in: $parts")
         val indexString = parts(1).drop(1).dropRight(1)
-        val ii = if(indexString == "*") None else Some(BigInt(indexString, 2))
+        val ii = if (indexString == "*") None else Some(BigInt(indexString, 2))
         (BigInt(parts(2), 2), ii)
       } else { (BigInt(parts(1), 2), None) }
       Assignment(ii, value, index, symbol = parts.last, is_array)
     }
 
     def parse_line(line: String): Unit = {
-      if (line.isEmpty) { /* skip blank lines */ return }
-      if (line.startsWith(";")) { /* skip comments */ return }
+      if (line.isEmpty) {
+        /* skip blank lines */
+        return
+      }
+      if (line.startsWith(";")) {
+        /* skip comments */
+        return
+      }
       val parts = line.split(" ")
       def uintStartingAt(ii: Int) = Integer.parseUnsignedInt(line.substring(ii))
 
       //print(state)
 
       def finishWitness(): State = {
-        witnesses.append(Witness(failedBad=failedBad, regInit=regInit.toMap, memInit=memInit.toMap, inputs=allInputs.toSeq))
+        witnesses.append(
+          Witness(failedBad = failedBad, regInit = regInit.toMap, memInit = memInit.toMap, inputs = allInputs.toSeq)
+        )
         regInit.clear()
         memInit.clear()
         inputs.clear()
@@ -77,8 +85,10 @@ object Btor2WitnessParser {
           WaitForProp()
         }
         case s: WaitForProp => {
-          parts.foreach{p => assert(p.startsWith("b") || p.startsWith("j"), s"unexpected property name: $p in $line")}
-          val props = parts.map{p => (p.substring(0,1), Integer.parseUnsignedInt(p.substring(1)))}
+          parts.foreach { p =>
+            assert(p.startsWith("b") || p.startsWith("j"), s"unexpected property name: $p in $line")
+          }
+          val props = parts.map { p => (p.substring(0, 1), Integer.parseUnsignedInt(p.substring(1))) }
           val next = Props(bad = props.filter(_._1 == "b").map(_._2), fair = props.filter(_._1 == "j").map(_._2))
           assert(next.fair.isEmpty, "Fairness properties are not supported yet.")
           failedBad = next.bad
@@ -89,11 +99,12 @@ object Btor2WitnessParser {
           newStates()
         }
         case s: States => {
-          if(line == ".") { finishWitness() }
-          else if(line.startsWith("@")) { newInputs() } else {
+          if (line == ".") { finishWitness() }
+          else if (line.startsWith("@")) { newInputs() }
+          else {
             val a = parseAssignment(parts)
             assert(s.ii == 0, "We currently do not support non-deterministic state updates")
-            if(a.isArray) {
+            if (a.isArray) {
               val priorWrites = memInit.getOrElse(a.ii, Seq())
               memInit(a.ii) = priorWrites ++ Seq((a.index, a.value))
             } else {
@@ -103,9 +114,10 @@ object Btor2WitnessParser {
           }
         }
         case s: Inputs => {
-          if(line == ".") { finishInputFrame() ; finishWitness() }
-          else if(line.startsWith("@")) { finishInputFrame() ; newInputs() }
-          else if(line.startsWith("#")) { finishInputFrame() ; newStates()  } else {
+          if (line == ".") { finishInputFrame(); finishWitness() }
+          else if (line.startsWith("@")) { finishInputFrame(); newInputs() }
+          else if (line.startsWith("#")) { finishInputFrame(); newStates() }
+          else {
             val a = parseAssignment(parts)
             assert(a.index.isEmpty, s"Input frames are not expected to contain array assignments!")
             inputs(a.ii) = a.value
@@ -116,11 +128,13 @@ object Btor2WitnessParser {
       //println(s" -> $state")
     }
 
-    breakable { lines.foreach{ ll =>
-      //println(ll.trim)
-      parse_line(ll.trim)
-      if(done) break()
-    }}
+    breakable {
+      lines.foreach { ll =>
+        //println(ll.trim)
+        parse_line(ll.trim)
+        if (done) break()
+      }
+    }
 
     witnesses.toSeq
   }

@@ -7,7 +7,7 @@ package maltese.smt.solvers.uclid
 
 import scala.collection.JavaConverters._
 
-class InteractiveProcess(args: List[String], saveInput: Boolean=false) {
+class InteractiveProcess(args: List[String], saveInput: Boolean = false) {
   // create the process.
   private val cmdLine = (args).asJava
   private val builder = new ProcessBuilder(cmdLine)
@@ -21,14 +21,13 @@ class InteractiveProcess(args: List[String], saveInput: Boolean=false) {
   override def toString = inputString
 
   // Is this the best way of telling if a process is alive?
-  def isAlive : Boolean = {
+  def isAlive: Boolean = {
     process.isAlive
   }
 
   // Some helper functions.
-  private def stringToBytes(str: String): Array[Byte] = str.map(_.toChar).toCharArray.map(_.toByte)
+  private def stringToBytes(str:   String): Array[Byte] = str.map(_.toChar).toCharArray.map(_.toByte)
   private def bytesToString(bytes: Array[Byte]) = new String(bytes)
-
 
   // Write to the process's input stream.
   def writeInput(str: String): Unit = {
@@ -42,7 +41,7 @@ class InteractiveProcess(args: List[String], saveInput: Boolean=false) {
     in.close()
   }
   // Read from the process's output stream.
-  def readOutput() : Option[String] = {
+  def readOutput(): Option[String] = {
     inputString = ""
     in.flush()
     var done = false
@@ -56,7 +55,7 @@ class InteractiveProcess(args: List[String], saveInput: Boolean=false) {
       } else {
         val bytes = Array.ofDim[Byte](numAvail)
         val numRead = out.read(bytes, 0, numAvail)
-        val string = bytesToString ({
+        val string = bytesToString({
           if (numRead == numAvail) {
             bytes
           } else {

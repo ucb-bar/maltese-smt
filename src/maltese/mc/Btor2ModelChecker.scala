@@ -12,13 +12,13 @@ import scala.sys.process._
 
 class BtormcModelChecker extends Btor2ModelChecker {
   // TODO: check to make sure binary exists
-  override val name: String = "btormc"
-  override val prefix: String = "btormc"
+  override val name:           String = "btormc"
+  override val prefix:         String = "btormc"
   override val supportsOutput: Boolean = false
   override protected def makeArgs(kMax: Int, inputFile: Option[String]): Seq[String] = {
-    val prefix = if(kMax > 0) Seq("btormc", s"--kmax $kMax") else Seq("btormc")
+    val prefix = if (kMax > 0) Seq("btormc", s"--kmax $kMax") else Seq("btormc")
     inputFile match {
-      case None => prefix
+      case None       => prefix
       case Some(file) => prefix ++ Seq(s"$file")
     }
   }
@@ -30,15 +30,15 @@ class BtormcModelChecker extends Btor2ModelChecker {
 
 class Cosa2ModelChecker extends Btor2ModelChecker {
   // TODO: check to make sure binary exists
-  override val name: String = "cosa2"
-  override val prefix: String = "btormc"
-  override val supportsOutput: Boolean = true
+  override val name:                       String = "cosa2"
+  override val prefix:                     String = "btormc"
+  override val supportsOutput:             Boolean = true
   override val supportsMultipleProperties: Boolean = false
   override protected def makeArgs(kMax: Int, inputFile: Option[String]): Seq[String] = {
     val base = Seq("cosa2", "--engine bmc")
-    val prefix = if(kMax > 0) base ++ Seq(s"--bound $kMax") else base
+    val prefix = if (kMax > 0) base ++ Seq(s"--bound $kMax") else base
     inputFile match {
-      case None => throw new RuntimeException("cosa2 only supports file based input. Please supply a filename!")
+      case None       => throw new RuntimeException("cosa2 only supports file based input. Please supply a filename!")
       case Some(file) => prefix ++ Seq(s"$file")
     }
   }
@@ -47,9 +47,10 @@ class Cosa2ModelChecker extends Btor2ModelChecker {
   private val Sat = 1
   private val Unsat = 0
   override protected def isFail(ret: Int, res: Iterable[String]): Boolean = {
-    assert(ret != WrongUsage, "There was an error trying to call cosa2:\n"+res.mkString("\n"))
+    assert(ret != WrongUsage, "There was an error trying to call cosa2:\n" + res.mkString("\n"))
     val fail = super.isFail(ret, res)
-    if(fail) { assert(ret == Sat) } else { assert(ret == Unknown) /* bmc only returns unknown because it cannot prove unsat */}
+    if (fail) { assert(ret == Sat) }
+    else { assert(ret == Unknown) /* bmc only returns unknown because it cannot prove unsat */ }
     fail
   }
 }
@@ -62,10 +63,11 @@ abstract class Btor2ModelChecker extends IsModelChecker {
   val supportsMultipleProperties: Boolean = true
   override def check(sys: TransitionSystem, kMax: Int = -1, fileName: Option[String] = None): ModelCheckResult = {
     val features = TransitionSystem.analyzeFeatures(sys)
-    val quantifierFree = if(features.hasQuantifiers) new ExpandQuantifiers().run(sys) else sys
-    val checkSys = if(supportsMultipleProperties) quantifierFree else TransitionSystem.combineProperties(quantifierFree)
+    val quantifierFree = if (features.hasQuantifiers) new ExpandQuantifiers().run(sys) else sys
+    val checkSys =
+      if (supportsMultipleProperties) quantifierFree else TransitionSystem.combineProperties(quantifierFree)
     fileName match {
-      case None => throw new NotImplementedError("Currently only file based model checking is supported!")
+      case None       => throw new NotImplementedError("Currently only file based model checking is supported!")
       case Some(file) => checkWithFile(file, checkSys, kMax)
     }
   }
@@ -76,7 +78,7 @@ abstract class Btor2ModelChecker extends IsModelChecker {
   private def checkWithFile(fileName: String, sys: TransitionSystem, kMax: Int): ModelCheckResult = {
     val btorWrite = new PrintWriter(fileName)
     val lines = Btor2Serializer.serialize(sys, skipOutput = !supportsOutput)
-    lines.foreach{l => btorWrite.println(l) }
+    lines.foreach { l => btorWrite.println(l) }
     btorWrite.close()
 
     // execute model checker
@@ -84,7 +86,7 @@ abstract class Btor2ModelChecker extends IsModelChecker {
     val stdout = mutable.ArrayBuffer[String]()
     val stderr = mutable.ArrayBuffer[String]()
     val ret = cmd ! ProcessLogger(stdout.append(_), stderr.append(_))
-    if(stderr.nonEmpty) { println(s"ERROR: ${stderr.mkString("\n")}") }
+    if (stderr.nonEmpty) { println(s"ERROR: ${stderr.mkString("\n")}") }
 
     // write stdout to file for debugging
     val res = stdout
@@ -97,7 +99,7 @@ abstract class Btor2ModelChecker extends IsModelChecker {
     //println(s" -> $ret")
 
     // check if it starts with sat
-    if(isFail(ret, res)) {
+    if (isFail(ret, res)) {
       val witness = Btor2WitnessParser.read(res, 1).head
       ModelCheckFail(witness)
     } else {

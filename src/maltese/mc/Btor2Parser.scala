@@ -30,25 +30,60 @@ object Btor2 {
 
 private object Btor2Parser {
   val unary = Set("not", "inc", "dec", "neg", "redand", "redor", "redxor")
-  val binary = Set("iff", "implies", "sgt", "ugt", "sgte", "ugte", "slt", "ult", "slte", "ulte",
-    "and", "nand", "nor", "or", "xnor", "xor", "rol", "ror", "sll", "sra", "srl", "add", "mul", "sdiv", "udiv", "smod",
-    "srem", "urem", "sub", "saddo", "uaddo", "sdivo", "udivo", "smulo", "umulo", "ssubo", "usubo", "concat")
+  val binary = Set(
+    "iff",
+    "implies",
+    "sgt",
+    "ugt",
+    "sgte",
+    "ugte",
+    "slt",
+    "ult",
+    "slte",
+    "ulte",
+    "and",
+    "nand",
+    "nor",
+    "or",
+    "xnor",
+    "xor",
+    "rol",
+    "ror",
+    "sll",
+    "sra",
+    "srl",
+    "add",
+    "mul",
+    "sdiv",
+    "udiv",
+    "smod",
+    "srem",
+    "urem",
+    "sub",
+    "saddo",
+    "uaddo",
+    "sdivo",
+    "udivo",
+    "smulo",
+    "umulo",
+    "ssubo",
+    "usubo",
+    "concat"
+  )
 
   def read(lines: Iterator[String], inlineSignals: Boolean, defaultName: String): TransitionSystem = {
-    val bvSorts = new mutable.HashMap[Int,Int]()
-    val arraySorts = new mutable.HashMap[Int,(Int,Int)]()
-    val states = new mutable.HashMap[Int,State]()
+    val bvSorts = new mutable.HashMap[Int, Int]()
+    val arraySorts = new mutable.HashMap[Int, (Int, Int)]()
+    val states = new mutable.HashMap[Int, State]()
     val inputs = new mutable.ArrayBuffer[BVSymbol]()
-    val signals = new mutable.LinkedHashMap[Int,Signal]()
-    val yosysLabels = new mutable.HashMap[Int,String]()
+    val signals = new mutable.LinkedHashMap[Int, Signal]()
+    val yosysLabels = new mutable.HashMap[Int, String]()
     val namespace = Namespace()
 
-
     // unique name generator
-    def isUnique(name: String): Boolean = !namespace.contains(name)
+    def isUnique(name:         String): Boolean = !namespace.contains(name)
     def nameFromPrefix(prefix: String): String =
       namespace.newName(Iterator.from(0).map(i => s"_${prefix}_$i").filter(isUnique).next())
-
 
     // while not part of the btor2 spec, yosys annotates the system's name
     var name: Option[String] = None
@@ -56,7 +91,7 @@ private object Btor2Parser {
     def parseSort(id: Int, parts: Array[String]): Unit = {
       lazy val i3 = Integer.parseInt(parts(3))
       lazy val i4 = Integer.parseInt(parts(4))
-      if(parts(2) == "bitvec") {
+      if (parts(2) == "bitvec") {
         bvSorts(id) = i3
       } else {
         assert(parts(2) == "array")
@@ -64,10 +99,10 @@ private object Btor2Parser {
       }
     }
 
-    /** yosys sometimes provides comments with human readable names for i/o/ and state signals **/
-    def parseYosysComment(comment: String): Option[Tuple2[Int,String]] = {
+    /** yosys sometimes provides comments with human readable names for i/o/ and state signals * */
+    def parseYosysComment(comment: String): Option[Tuple2[Int, String]] = {
       // yosys module name annotation
-      if(comment.contains("Yosys") && comment.contains("for module ")) {
+      if (comment.contains("Yosys") && comment.contains("for module ")) {
         val start = comment.indexOf("for module ")
         val mod_name = comment.substring(start + "for module ".length).dropRight(1)
         name = Some(mod_name)
@@ -75,20 +110,23 @@ private object Btor2Parser {
       val yosys_lbl: Regex = "\\s*;\\s*(\\d+) \\\\(\\w+)".r
       yosys_lbl.findFirstMatchIn(comment) match {
         case Some(m) => Some((Integer.parseInt(m.group(1)), m.group(2)))
-        case None => None
+        case None    => None
       }
     }
 
     def parseComment(comment: String): Unit = {
       parseYosysComment(comment) match {
         case Some((ii, lbl)) => yosysLabels(ii) = lbl
-        case None => None
+        case None            => None
       }
     }
 
     def parseLine(line: String): Unit = {
-      if(line.isEmpty) { /* skip blank lines */ return }
-      if(line.startsWith(";")) { parseComment(line);  return }
+      if (line.isEmpty) {
+        /* skip blank lines */
+        return
+      }
+      if (line.startsWith(";")) { parseComment(line); return }
       val parts = line.split(" ")
       val id = Integer.parseInt(parts.head)
 
@@ -98,9 +136,10 @@ private object Btor2Parser {
         val nid = Integer.parseInt(parts(3 + offset))
         assert(signals.contains(nid), s"Unknown node #$nid")
         val sig = signals(nid)
-        if(inlineSignals) { sig.e } else { sig.toSymbol }
+        if (inlineSignals) { sig.e }
+        else { sig.toSymbol }
       }
-      def bvExpr(offset: Int) = expr(offset).asInstanceOf[BVExpr]
+      def bvExpr(offset:    Int) = expr(offset).asInstanceOf[BVExpr]
       def arrayExpr(offset: Int) = expr(offset).asInstanceOf[ArrayExpr]
 
       lazy val sortId = Integer.parseInt(parts(2))
@@ -121,29 +160,27 @@ private object Btor2Parser {
       }
 
       def checkSort(e: SMTExpr): Option[SMTExpr] = e match {
-        case b : BVExpr =>
+        case b: BVExpr =>
           assert(b.width == width, s"Expected $width-bit value, got ${b.width}-bit value! $line")
           Some(b)
-        case a : ArrayExpr =>
-          assert(a.indexWidth == indexWidth,
-            s"Expected $indexWidth-bit index, got ${a.indexWidth}-bit index! $line")
-          assert(a.dataWidth == dataWidth,
-            s"Expected $dataWidth-bit data, got ${a.dataWidth}-bit data! $line")
+        case a: ArrayExpr =>
+          assert(a.indexWidth == indexWidth, s"Expected $indexWidth-bit index, got ${a.indexWidth}-bit index! $line")
+          assert(a.dataWidth == dataWidth, s"Expected $dataWidth-bit data, got ${a.dataWidth}-bit data! $line")
           Some(a)
       }
 
       def getLabelName(prefix: String): String =
-        if(parts.length > 3) namespace.newName(parts(3)) else nameFromPrefix(prefix)
+        if (parts.length > 3) namespace.newName(parts(3)) else nameFromPrefix(prefix)
 
-      def toSymbolOrExpr(name: String, e: SMTExpr): SMTExpr = if(inlineSignals) e else SMTSymbol.fromExpr(name, e)
+      def toSymbolOrExpr(name: String, e: SMTExpr): SMTExpr = if (inlineSignals) e else SMTSymbol.fromExpr(name, e)
 
       def isArray: Boolean = arraySorts.contains(sortId)
 
       val cmd = parts(1)
-      var name: Option[String] = None
+      var name:  Option[String] = None
       var label: SignalLabel = IsNode
-      val new_expr = cmd  match {
-        case "sort" => parseSort(id, parts) ; None
+      val new_expr = cmd match {
+        case "sort" => parseSort(id, parts); None
         case "input" =>
           name = Some(getLabelName("input"))
           val input = BVSymbol(name.get, width)
@@ -155,7 +192,7 @@ private object Btor2Parser {
           Some(expr(-1))
         case "state" =>
           name = Some(getLabelName("state"))
-          val sym = if(isArray) ArraySymbol(name.get, indexWidth, dataWidth) else BVSymbol(name.get, width)
+          val sym = if (isArray) ArraySymbol(name.get, indexWidth, dataWidth) else BVSymbol(name.get, width)
           states.put(id, State(sym, None, None))
           Some(sym)
         case "next" =>
@@ -164,7 +201,7 @@ private object Btor2Parser {
           name = Some(namespace.newName(state.sym.name + ".next"))
           label = IsNext
           val nextExpr = expr(1)
-          states.put(stateId, state.copy(next=Some(toSymbolOrExpr(name.get,  nextExpr))))
+          states.put(stateId, state.copy(next = Some(toSymbolOrExpr(name.get, nextExpr))))
           Some(nextExpr)
         case "init" =>
           val stateId = Integer.parseInt(parts(3))
@@ -172,12 +209,12 @@ private object Btor2Parser {
           name = Some(namespace.newName(state.sym.name + ".init"))
           label = IsInit
           val initExpr = expr(1)
-          states.put(stateId, state.copy(init=Some(toSymbolOrExpr(name.get, initExpr))))
+          states.put(stateId, state.copy(init = Some(toSymbolOrExpr(name.get, initExpr))))
           Some(initExpr)
         case format @ ("const" | "constd" | "consth" | "zero" | "one") =>
-          val value = if(format == "zero"){ BigInt(0)
-          } else if (format == "one") { BigInt(1)
-          } else { parseConst(format, parts(3)) }
+          val value = if (format == "zero") { BigInt(0) }
+          else if (format == "one") { BigInt(1) }
+          else { parseConst(format, parts(3)) }
           checkSort(BVLiteral(value, width))
         case "ones" =>
           checkSort(BVLiteral((BigInt(1) << width) - 1, width))
@@ -216,7 +253,7 @@ private object Btor2Parser {
       }
     }
 
-    lines.foreach{ ll => parseLine(ll.trim) }
+    lines.foreach { ll => parseLine(ll.trim) }
 
     //println(yosys_lables)
     // TODO: use yosys_lables to fill in missing symbol names
@@ -225,62 +262,62 @@ private object Btor2Parser {
     val isInputOrState = (inputs.map(_.name) ++ states.values.map(_.sym.name)).toSet
 
     // if we are inlining, we are ignoring all node signals
-    val keep = if(inlineSignals) {
-      s: Signal => s.lbl != IsNode && s.lbl != IsNext && s.lbl != IsInit && !isInputOrState(s.name)
+    val keep = if (inlineSignals) { s: Signal =>
+      s.lbl != IsNode && s.lbl != IsNext && s.lbl != IsInit && !isInputOrState(s.name)
     } else { s: Signal => !isInputOrState(s.name) }
     val finalSignals = signals.values.filter(keep).toList
 
     val sysName = name.getOrElse(defaultName)
-    TransitionSystem(sysName, inputs=inputs.toList, states=states.values.toList, signals = finalSignals)
+    TransitionSystem(sysName, inputs = inputs.toList, states = states.values.toList, signals = finalSignals)
   }
 
   private def parseConst(format: String, str: String): BigInt = format match {
-    case "const" => BigInt(str, 2)
+    case "const"  => BigInt(str, 2)
     case "constd" => BigInt(str)
     case "consth" => BigInt(str, 16)
   }
 
   private def parseUnary(op: String, expr: BVExpr): BVExpr = op match {
-    case "not" => BVNot(expr)
-    case "inc" => BVOp(Op.Add, expr, BVLiteral(1, expr.width))
-    case "dec" => BVOp(Op.Sub, expr, BVLiteral(1, expr.width))
-    case "neg" => BVNegate(expr)
+    case "not"    => BVNot(expr)
+    case "inc"    => BVOp(Op.Add, expr, BVLiteral(1, expr.width))
+    case "dec"    => BVOp(Op.Sub, expr, BVLiteral(1, expr.width))
+    case "neg"    => BVNegate(expr)
     case "redand" => Reduce.and(expr)
-    case "redor" => Reduce.or(expr)
+    case "redor"  => Reduce.or(expr)
     case "redxor" => Reduce.xor(expr)
-    case other => throw new RuntimeException(s"Unknown unary op $other")
+    case other    => throw new RuntimeException(s"Unknown unary op $other")
   }
 
   private def parseBinary(op: String, a: BVExpr, b: BVExpr): BVExpr = op match {
-    case "ugt" => BVComparison(Compare.Greater, a, b, signed = false)
-    case "ugte" => BVComparison(Compare.GreaterEqual, a, b, signed = false)
-    case "ult" => BVNot(BVComparison(Compare.GreaterEqual, a, b, signed = false))
-    case "ulte" => BVNot(BVComparison(Compare.Greater, a, b, signed = false))
-    case "sgt" => BVComparison(Compare.Greater, a, b, signed = true)
-    case "sgte" => BVComparison(Compare.GreaterEqual, a, b, signed = true)
-    case "slt" => BVNot(BVComparison(Compare.GreaterEqual, a, b, signed = true))
-    case "slte" => BVNot(BVComparison(Compare.Greater, a, b, signed = true))
-    case "and" => BVOp(Op.And, a, b)
-    case "nand" => BVNot(BVOp(Op.And, a, b))
-    case "nor" => BVNot(BVOp(Op.Or, a, b))
-    case "or" => BVOp(Op.Or, a, b)
-    case "xnor" => BVNot(BVOp(Op.Xor, a, b))
-    case "xor" => BVOp(Op.Xor, a, b)
+    case "ugt"         => BVComparison(Compare.Greater, a, b, signed = false)
+    case "ugte"        => BVComparison(Compare.GreaterEqual, a, b, signed = false)
+    case "ult"         => BVNot(BVComparison(Compare.GreaterEqual, a, b, signed = false))
+    case "ulte"        => BVNot(BVComparison(Compare.Greater, a, b, signed = false))
+    case "sgt"         => BVComparison(Compare.Greater, a, b, signed = true)
+    case "sgte"        => BVComparison(Compare.GreaterEqual, a, b, signed = true)
+    case "slt"         => BVNot(BVComparison(Compare.GreaterEqual, a, b, signed = true))
+    case "slte"        => BVNot(BVComparison(Compare.Greater, a, b, signed = true))
+    case "and"         => BVOp(Op.And, a, b)
+    case "nand"        => BVNot(BVOp(Op.And, a, b))
+    case "nor"         => BVNot(BVOp(Op.Or, a, b))
+    case "or"          => BVOp(Op.Or, a, b)
+    case "xnor"        => BVNot(BVOp(Op.Xor, a, b))
+    case "xor"         => BVOp(Op.Xor, a, b)
     case "rol" | "ror" => throw new NotImplementedError("TODO: implement rotates on bv<N>")
-    case "sll" => BVOp(Op.ShiftLeft, a, b)
-    case "sra" => BVOp(Op.ArithmeticShiftRight, a, b)
-    case "srl" => BVOp(Op.ShiftRight, a, b)
-    case "add" => BVOp(Op.Add, a, b)
-    case "mul" => BVOp(Op.Mul, a, b)
-    case "sdiv" => BVOp(Op.SignedDiv, a, b)
-    case "udiv" => BVOp(Op.UnsignedDiv, a, b)
-    case "smod" => BVOp(Op.SignedMod, a, b)
-    case "srem" => BVOp(Op.SignedRem, a, b)
-    case "urem" => BVOp(Op.UnsignedRem, a, b)
-    case "sub" => BVOp(Op.Sub, a, b)
-    case "implies" => implies(a, b)
-    case "iff" => iff(a,b )
-    case other => throw new RuntimeException(s"Unknown binary op $other")
+    case "sll"         => BVOp(Op.ShiftLeft, a, b)
+    case "sra"         => BVOp(Op.ArithmeticShiftRight, a, b)
+    case "srl"         => BVOp(Op.ShiftRight, a, b)
+    case "add"         => BVOp(Op.Add, a, b)
+    case "mul"         => BVOp(Op.Mul, a, b)
+    case "sdiv"        => BVOp(Op.SignedDiv, a, b)
+    case "udiv"        => BVOp(Op.UnsignedDiv, a, b)
+    case "smod"        => BVOp(Op.SignedMod, a, b)
+    case "srem"        => BVOp(Op.SignedRem, a, b)
+    case "urem"        => BVOp(Op.UnsignedRem, a, b)
+    case "sub"         => BVOp(Op.Sub, a, b)
+    case "implies"     => implies(a, b)
+    case "iff"         => iff(a, b)
+    case other         => throw new RuntimeException(s"Unknown binary op $other")
   }
 
   private def implies(a: BVExpr, b: BVExpr): BVExpr = {

@@ -12,7 +12,7 @@ object AddForallQuantifiers {
   def name = "AddForallQuantifiers"
 
   def run(sys: mc.TransitionSystem, quantified: Iterable[QuantifiedVariable]): mc.TransitionSystem = {
-    if(quantified.isEmpty) return sys
+    if (quantified.isEmpty) return sys
     val variables: Map[smt.SMTSymbol, QuantifiedVariable] = quantified.map(v => v.sym -> v).toMap
 
     // We will only be able to properly generate btor and SMT if the forall and the variable are in the same
@@ -30,7 +30,7 @@ object AddForallQuantifiers {
     val signals = inlinedSys.signals.map {
       case s @ mc.Signal(_, e: smt.BVExpr, mc.IsBad) => s.copy(e = not(addAllQuantifiers(variables)(not(e))))
       case s @ mc.Signal(_, e: smt.BVExpr, _) if e.width == 1 => s.copy(e = addAllQuantifiers(variables)(e))
-      case s => assertNoVars(s.e, variables.keySet) ; s
+      case s => assertNoVars(s.e, variables.keySet); s
     }
 
     // check that there are no quantified state updates
@@ -41,7 +41,6 @@ object AddForallQuantifiers {
 
     inlinedSys.copy(inputs = inputs, signals = signals)
   }
-
 
   private def assertNoVars(e: smt.SMTExpr, variables: Set[smt.SMTSymbol]): Unit = {
     val symbols = Analysis.findSymbols(e).toSet
@@ -56,7 +55,7 @@ object AddForallQuantifiers {
 
   private def addQuantifier(e: smt.BVExpr, v: QuantifiedVariable): smt.BVExpr = {
     val guard = variableGuard(v)
-    if(guard == smt.True()) {
+    if (guard == smt.True()) {
       smt.BVForall(v.sym, e)
     } else {
       smt.BVForall(v.sym, smt.BVImplies(guard, e))
@@ -65,10 +64,10 @@ object AddForallQuantifiers {
 
   private def variableGuard(v: QuantifiedVariable): smt.BVExpr = {
     val max = (1 << v.sym.width) - 1
-    val lower = if(v.start > 0) {
+    val lower = if (v.start > 0) {
       smt.BVComparison(smt.Compare.GreaterEqual, v.sym, smt.BVLiteral(v.start, v.sym.width), signed = false)
     } else { smt.True() }
-    val upper = if(v.end < max) {
+    val upper = if (v.end < max) {
       smt.BVNot(smt.BVComparison(smt.Compare.Greater, v.sym, smt.BVLiteral(v.end, v.sym.width), signed = false))
     } else { smt.True() }
     smt.BVAnd(List(lower, upper))

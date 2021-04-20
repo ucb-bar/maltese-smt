@@ -12,12 +12,16 @@ case class ModelCheckSuccess() extends ModelCheckResult { override def isFail: B
 case class ModelCheckFail(witness: Witness) extends ModelCheckResult { override def isFail: Boolean = true }
 
 trait IsModelChecker {
-  val name: String
-  val prefix: String
+  val name:          String
+  val prefix:        String
   val fileExtension: String
-  val supportsUF: Boolean = false
+  val supportsUF:          Boolean = false
   val supportsQuantifiers: Boolean = false
   def check(sys: TransitionSystem, kMax: Int = -1, fileName: Option[String] = None): ModelCheckResult
 }
 
-case class Witness(failedBad: Seq[Int], regInit: Map[Int, BigInt], memInit: Map[Int, Seq[(Option[BigInt], BigInt)]], inputs: Seq[Map[Int, BigInt]])
+case class Witness(
+  failedBad: Seq[Int],
+  regInit:   Map[Int, BigInt],
+  memInit:   Map[Int, Seq[(Option[BigInt], BigInt)]],
+  inputs:    Seq[Map[Int, BigInt]])

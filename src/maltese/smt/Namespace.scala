@@ -8,7 +8,7 @@ import maltese.mc.{SignalLabel, TransitionSystem}
 
 import scala.collection.mutable
 
-class Namespace private(names: mutable.HashSet[String]) {
+class Namespace private (names: mutable.HashSet[String]) {
   names ++= Namespace.Reserved
 
   def newName(prefix: String): String = {
@@ -25,14 +25,17 @@ class Namespace private(names: mutable.HashSet[String]) {
 object Namespace {
   def apply(): Namespace = new Namespace(mutable.HashSet())
   def apply(sys: TransitionSystem): Namespace = {
-    new Namespace(mutable.HashSet() ++
-      sys.inputs.map(_.name) ++ sys.states.map(_.sym.name) ++ sys.signals.map(_.name)
+    new Namespace(
+      mutable.HashSet() ++
+        sys.inputs.map(_.name) ++ sys.states.map(_.sym.name) ++ sys.signals.map(_.name)
     )
   }
 
   // try to replace/remove characters to get a sensible name
-  def fixCharacters(name: String): String = if(name.isEmpty) { Namespace.TempNamePrefix } else {
-    val start = if(!isAllowedStart(name.head)) { "_" + name } else { name }
+  def fixCharacters(name: String): String = if (name.isEmpty) { Namespace.TempNamePrefix }
+  else {
+    val start = if (!isAllowedStart(name.head)) { "_" + name }
+    else { name }
     start.filter(isAllowed)
   }
 
@@ -42,8 +45,34 @@ object Namespace {
 
   private val TempNamePrefix = "_GEN"
   private val Keywords = List(
-    "zext", "uext", "sext", "not", "neg", "eq", "ugt", "sgt", "ugeq", "sgeq", "concat", "eq", "ite", "select",
-    "and", "or", "xor", "logical_shift_left", "arithmetic_shift_right", "logical_shift_right", "add", "mul",
-    "sdiv", "udiv", "smod", "srem", "urem", "sub") ++ SignalLabel.labelStrings
+    "zext",
+    "uext",
+    "sext",
+    "not",
+    "neg",
+    "eq",
+    "ugt",
+    "sgt",
+    "ugeq",
+    "sgeq",
+    "concat",
+    "eq",
+    "ite",
+    "select",
+    "and",
+    "or",
+    "xor",
+    "logical_shift_left",
+    "arithmetic_shift_right",
+    "logical_shift_right",
+    "add",
+    "mul",
+    "sdiv",
+    "udiv",
+    "smod",
+    "srem",
+    "urem",
+    "sub"
+  ) ++ SignalLabel.labelStrings
   private val Reserved = Keywords :+ TempNamePrefix
 }

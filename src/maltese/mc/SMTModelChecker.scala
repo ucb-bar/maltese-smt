@@ -5,27 +5,39 @@
 package maltese.mc
 
 import maltese.smt
-import maltese.smt.{Comment, DeclareFunction, DeclareUninterpretedSort, DeclareUninterpretedSymbol, DefineFunction, SMTCommand, solvers}
+import maltese.smt.{
+  solvers,
+  Comment,
+  DeclareFunction,
+  DeclareUninterpretedSort,
+  DeclareUninterpretedSymbol,
+  DefineFunction,
+  SMTCommand
+}
 
 import scala.collection.mutable
 
 case class SMTModelCheckerOptions(checkConstraints: Boolean, checkBadStatesIndividually: Boolean)
 object SMTModelCheckerOptions {
-  val Default: SMTModelCheckerOptions = SMTModelCheckerOptions(true, true)
+  val Default:     SMTModelCheckerOptions = SMTModelCheckerOptions(true, true)
   val Performance: SMTModelCheckerOptions = SMTModelCheckerOptions(false, false)
 }
 
 /** SMT based bounded model checking as an alternative to dispatching to a btor2 based external solver */
-class SMTModelChecker(val solver: smt.Solver, options: SMTModelCheckerOptions = SMTModelCheckerOptions.Performance, printProgress: Boolean = false) extends IsModelChecker {
-  override val name: String = "SMTModelChecker with " + solver.name
-  override val prefix: String = solver.name
-  override val fileExtension: String = ".smt2"
-  override val supportsUF: Boolean = true
+class SMTModelChecker(
+  val solver:    smt.Solver,
+  options:       SMTModelCheckerOptions = SMTModelCheckerOptions.Performance,
+  printProgress: Boolean = false)
+    extends IsModelChecker {
+  override val name:                String = "SMTModelChecker with " + solver.name
+  override val prefix:              String = solver.name
+  override val fileExtension:       String = ".smt2"
+  override val supportsUF:          Boolean = true
   override val supportsQuantifiers: Boolean = solver.supportsQuantifiers
 
   override def check(sys: TransitionSystem, kMax: Int, fileName: Option[String] = None): ModelCheckResult = {
     require(kMax > 0 && kMax <= 2000, s"unreasonable kMax=$kMax")
-    if(fileName.nonEmpty) println("WARN: dumping to file is not supported at the moment.")
+    if (fileName.nonEmpty) println("WARN: dumping to file is not supported at the moment.")
 
     val features = TransitionSystem.analyzeFeatures(sys)
     // set correct logic for solver
@@ -36,7 +48,7 @@ class SMTModelChecker(val solver: smt.Solver, options: SMTModelCheckerOptions = 
     solver.push()
 
     // declare UFs if necessary
-    if(features.hasUF) {
+    if (features.hasUF) {
       val foos = TransitionSystem.findUFs(sys)
       assert(foos.nonEmpty)
       foos.foreach(solver.runCommand(_))
@@ -51,38 +63,39 @@ class SMTModelChecker(val solver: smt.Solver, options: SMTModelCheckerOptions = 
     val bads = sys.signals.filter(_.lbl == IsBad).map(_.name)
 
     (0 to kMax).foreach { k =>
-      if(printProgress) println(s"Step #$k")
+      if (printProgress) println(s"Step #$k")
 
       // assume all constraints hold in this step
       constraints.foreach(c => solver.assert(enc.getConstraint(c)))
 
       // make sure the constraints are not contradictory
-      if(options.checkConstraints) {
+      if (options.checkConstraints) {
         val res = solver.check(produceModel = false)
         assert(res.isSat, s"Found unsatisfiable constraints in cycle $k")
       }
 
-      if(options.checkBadStatesIndividually) {
+      if (options.checkBadStatesIndividually) {
         // check each bad state individually
-        bads.zipWithIndex.foreach { case (b, bi) =>
-          if(printProgress) print(s"- b$bi? ")
+        bads.zipWithIndex.foreach {
+          case (b, bi) =>
+            if (printProgress) print(s"- b$bi? ")
 
-          solver.push()
-          solver.assert(enc.getBadState(b))
-          val res = solver.check(produceModel = false)
+            solver.push()
+            solver.assert(enc.getBadState(b))
+            val res = solver.check(produceModel = false)
 
-          // did we find an assignment for which the bad state is true?
-          if(res.isSat) {
-            if(printProgress) println("❌")
-            val w = getWitness(sys, enc, k, Seq(bi))
+            // did we find an assignment for which the bad state is true?
+            if (res.isSat) {
+              if (printProgress) println("❌")
+              val w = getWitness(sys, enc, k, Seq(bi))
+              solver.pop()
+              solver.pop()
+              assert(solver.stackDepth == 0, s"Expected solver stack to be empty, not: ${solver.stackDepth}")
+              return ModelCheckFail(w)
+            } else {
+              if (printProgress) println("✅")
+            }
             solver.pop()
-            solver.pop()
-            assert(solver.stackDepth == 0, s"Expected solver stack to be empty, not: ${solver.stackDepth}")
-            return ModelCheckFail(w)
-          } else {
-            if(printProgress) println("✅")
-          }
-          solver.pop()
         }
       } else {
         val anyBad = smt.BVOr(bads.map(enc.getBadState))
@@ -91,7 +104,7 @@ class SMTModelChecker(val solver: smt.Solver, options: SMTModelCheckerOptions = 
         val res = solver.check(produceModel = false)
 
         // did we find an assignment for which at least one bad state is true?
-        if(res.isSat) {
+        if (res.isSat) {
           val w = getWitness(sys, enc, k, bads.indices.toSeq)
           solver.pop()
           solver.pop()
@@ -117,7 +130,7 @@ class SMTModelChecker(val solver: smt.Solver, options: SMTModelCheckerOptions = 
       case (State(sym: smt.BVSymbol, _, _), ii) =>
         solver.getValue(enc.getSignalAt(sym, 0)) match {
           case Some(value) => (Some(ii -> value), None)
-          case None => (None, None)
+          case None        => (None, None)
         }
       case (State(sym: smt.ArraySymbol, _, _), ii) =>
         val value = solver.getValue(enc.getSignalAt(sym, 0))
@@ -128,8 +141,9 @@ class SMTModelChecker(val solver: smt.Solver, options: SMTModelCheckerOptions = 
     val memInit = stateInit.flatMap(_._2).toMap
 
     val inputs = (0 to kMax).map { k =>
-      sys.inputs.zipWithIndex.flatMap { case (input, i) =>
-        solver.getValue(enc.getSignalAt(input, k)).map(value => i -> value)
+      sys.inputs.zipWithIndex.flatMap {
+        case (input, i) =>
+          solver.getValue(enc.getSignalAt(input, k)).map(value => i -> value)
       }.toMap
     }
 
@@ -139,21 +153,26 @@ class SMTModelChecker(val solver: smt.Solver, options: SMTModelCheckerOptions = 
 }
 
 trait SMTEncoding {
+
   /** generate the system description */
   def defineHeader(solver: smt.Solver): Unit
+
   /** define the init state */
   def init(solver: smt.Solver): Unit
+
   /** add one more state */
   def unroll(solver: smt.Solver): Unit
+
   /** returns an expression representing the constraint in the current state */
   def getConstraint(name: String): smt.BVExpr
+
   /** returns an expression representing the constraint in the current state */
   def getBadState(name: String): smt.BVExpr
+
   /** returns an expression representing the signal in state k */
-  def getSignalAt(sym: smt.BVSymbol, k: Int): smt.BVExpr
+  def getSignalAt(sym: smt.BVSymbol, k:    Int): smt.BVExpr
   def getSignalAt(sym: smt.ArraySymbol, k: Int): smt.ArrayExpr
 }
-
 
 class CompactEncoding(sys: TransitionSystem) extends SMTEncoding {
   import SMTTransitionSystemEncoder._
@@ -215,11 +234,11 @@ class CompactEncoding(sys: TransitionSystem) extends SMTEncoding {
 }
 
 /** This Transition System encoding is directly inspired by yosys' SMT backend:
- * https://github.com/YosysHQ/yosys/blob/master/backends/smt2/smt2.cc
- * It if fairly compact, but unfortunately, the use of an uninterpreted sort for the state
- * prevents this encoding from working with boolector.
- * For simplicity reasons, we do not support hierarchical designs (no `_h` function).
- */
+  * https://github.com/YosysHQ/yosys/blob/master/backends/smt2/smt2.cc
+  * It if fairly compact, but unfortunately, the use of an uninterpreted sort for the state
+  * prevents this encoding from working with boolector.
+  * For simplicity reasons, we do not support hierarchical designs (no `_h` function).
+  */
 object SMTTransitionSystemEncoder {
 
   def encode(sys: TransitionSystem, solver: smt.Solver): Unit = {
@@ -271,7 +290,7 @@ object SMTTransitionSystemEncoder {
     }
 
     def defineConjunction(e: Iterable[smt.BVExpr], suffix: String): Unit = {
-      define(smt.BVSymbol(name, 1), if(e.isEmpty) smt.True() else smt.BVAnd(e), suffix)
+      define(smt.BVSymbol(name, 1), if (e.isEmpty) smt.True() else smt.BVAnd(e), suffix)
     }
 
     // the transition relation asserts that the value of the next state is the next value from the previous state
@@ -310,32 +329,39 @@ object SMTTransitionSystemEncoder {
   val AssumptionSuffix = "_u"
   private def lblToKind(lbl: SignalLabel): String = lbl match {
     case IsNode | IsInit | IsNext => "wire"
-    case IsOutput => "output"
+    case IsOutput                 => "output"
     // different from how the normal SMT encoding works, we actually defined bad states instead of safe states
-    case IsBad => "bad"
+    case IsBad        => "bad"
     case IsConstraint => "assume"
-    case IsFair => "fair"
+    case IsFair       => "fair"
   }
   private def toDescription(sym: smt.SMTSymbol, kind: String, comments: String => Option[String]): List[Comment] = {
     List(sym match {
       case smt.BVSymbol(name, width) => Comment(s"firrtl-smt2-$kind $name $width")
-      case smt.ArraySymbol(name, indexWidth, dataWidth) => smt.Comment(s"firrtl-smt2-$kind $name $indexWidth $dataWidth")
+      case smt.ArraySymbol(name, indexWidth, dataWidth) =>
+        smt.Comment(s"firrtl-smt2-$kind $name $indexWidth $dataWidth")
     }) ++ comments(sym.name).map(smt.Comment)
   }
 
   // All signals are modelled with functions that need to be called with the state as argument,
   // this replaces all Symbols with function applications to the state.
-  private def replaceSymbols(suffix: String, arg: smt.SMTFunctionArg, vars: Set[String] = Set())(e: smt.SMTExpr): smt.SMTExpr = e match {
+  private def replaceSymbols(
+    suffix: String,
+    arg:    smt.SMTFunctionArg,
+    vars:   Set[String] = Set()
+  )(e:      smt.SMTExpr
+  ): smt.SMTExpr = e match {
     case smt.BVSymbol(name, width) if !vars(name) => smt.BVFunctionCall(id(name + suffix), List(arg), width)
-    case smt.ArraySymbol(name, indexWidth, dataWidth) if !vars(name) => smt.ArrayFunctionCall(id(name + suffix), List(arg), indexWidth, dataWidth)
-    case fa@ smt.BVForall(variable, _) => fa.mapExpr(replaceSymbols(suffix, arg, vars + variable.name))
-    case other => other.mapExpr(replaceSymbols(suffix, arg, vars))
+    case smt.ArraySymbol(name, indexWidth, dataWidth) if !vars(name) =>
+      smt.ArrayFunctionCall(id(name + suffix), List(arg), indexWidth, dataWidth)
+    case fa @ smt.BVForall(variable, _) => fa.mapExpr(replaceSymbols(suffix, arg, vars + variable.name))
+    case other                          => other.mapExpr(replaceSymbols(suffix, arg, vars))
   }
 
   def determineLogic(features: TransitionSystemFeatures): smt.Logic = {
     val base = smt.SMTFeature.BitVector + smt.SMTFeature.UninterpretedFunctions
-    val withArrays = if(features.hasArrays) base + smt.SMTFeature.Array else base
-    val withQuantifiers = if(features.hasQuantifiers) withArrays else withArrays + smt.SMTFeature.QuantifierFree
+    val withArrays = if (features.hasArrays) base + smt.SMTFeature.Array else base
+    val withQuantifiers = if (features.hasQuantifiers) withArrays else withArrays + smt.SMTFeature.QuantifierFree
     withQuantifiers
   }
 }

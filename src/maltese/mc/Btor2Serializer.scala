@@ -74,7 +74,7 @@ private class Btor2Serializer private () {
       line(s"read ${t(expr.width)} ${s(array)} ${s(index)}")
     case BVIte(cond, tru, fals) =>
       line(s"ite ${t(expr.width)} ${s(cond)} ${s(tru)} ${s(fals)}")
-    case forall : BVForall =>
+    case forall: BVForall =>
       throw new RuntimeException(s"Quantifiers are not supported by the btor2 format: ${forall}")
   }
 
@@ -133,15 +133,18 @@ private class Btor2Serializer private () {
       // The problem we are facing here is that the only way to create a constant array from a bv expression
       // seems to be to use the bv expression as the init value of a state variable.
       // Thus we need to create a fake state for every array init expression.
-      arrayConstants.getOrElseUpdate(e.toString, {
-        comment(s"$expr")
-        val eId = s(e)
-        val tpeId = t(indexWidth, e.width)
-        val state = line(s"state $tpeId")
-        line(s"init $tpeId $state $eId")
-        state
-      })
-    case f : ArrayFunctionCall => throw new RuntimeException(s"The btor2 format does not support uninterpreted functions that return arrays!: $f")
+      arrayConstants.getOrElseUpdate(
+        e.toString, {
+          comment(s"$expr")
+          val eId = s(e)
+          val tpeId = t(indexWidth, e.width)
+          val state = line(s"state $tpeId")
+          line(s"init $tpeId $state $eId")
+          state
+        }
+      )
+    case f: ArrayFunctionCall =>
+      throw new RuntimeException(s"The btor2 format does not support uninterpreted functions that return arrays!: $f")
   }
   private val arrayConstants = mutable.HashMap[String, Int]()
 
@@ -163,11 +166,11 @@ private class Btor2Serializer private () {
       symbols(name) = id
       // add label
       lbl match {
-        case Some(IsOutput) => if(!skipOutput) line(s"output $id ; $name")
+        case Some(IsOutput)     => if (!skipOutput) line(s"output $id ; $name")
         case Some(IsConstraint) => line(s"constraint $id ; $name")
-        case Some(IsBad) => line(s"bad $id ; $name")
-        case Some(IsFair) => line(s"fair $id ; $name")
-        case _ =>
+        case Some(IsBad)        => line(s"bad $id ; $name")
+        case Some(IsFair)       => line(s"fair $id ; $name")
+        case _                  =>
       }
       // add trailing comment
       info.comments.get(name).foreach(trailingComment)
@@ -188,7 +191,7 @@ private class Btor2Serializer private () {
       val initId = st.init.map {
         // only in the context of initializing a state can we use a bv expression to model an array
         case ArrayConstant(e, _) => comment(s"${st.sym}.init"); s(e)
-        case init => comment(s"${st.sym}.init"); s(init)
+        case init                => comment(s"${st.sym}.init"); s(init)
       }
       declare(st.sym.name, None, line(s"state ${t(st.sym)} ${st.sym.name}"))
       st.init.foreach { init => line(s"init ${t(init)} ${s(st.sym)} ${initId.get}") }

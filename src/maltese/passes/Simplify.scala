@@ -2,13 +2,12 @@
 // released under BSD 3-Clause License
 // author: Kevin Laeufer <laeufer@cs.berkeley.edu>
 
-
 package maltese.passes
 
 import maltese.mc._
 import maltese.smt.SMTSimplifier
 
-/** simplifies signals where possible  */
+/** simplifies signals where possible */
 object Simplify extends Pass {
   override def name: String = "Simplify"
 

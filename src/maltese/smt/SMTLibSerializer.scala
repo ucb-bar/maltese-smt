@@ -8,11 +8,11 @@ package maltese.smt
 import scala.util.matching.Regex
 
 /** Converts STM Expressions to a SMTLib compatible string representation.
- *  See http://smtlib.cs.uiowa.edu/
- *  Assumes well typed expression, so it is advisable to run the TypeChecker
- *  before serializing!
- *  Automatically converts 1-bit vectors to bool.
- */
+  *  See http://smtlib.cs.uiowa.edu/
+  *  Assumes well typed expression, so it is advisable to run the TypeChecker
+  *  before serializing!
+  *  Automatically converts 1-bit vectors to bool.
+  */
 object SMTLibSerializer {
   def setLogic(hasMem: Boolean) = "(set-logic QF_" + (if (hasMem) "A" else "") + "UFBV)"
 
@@ -22,7 +22,7 @@ object SMTLibSerializer {
   }
 
   def serialize(t: SMTType): String = t match {
-    case BVType(width) => serializeBitVectorType(width)
+    case BVType(width)                    => serializeBitVectorType(width)
     case ArrayType(indexWidth, dataWidth) => serializeArrayType(indexWidth, dataWidth)
   }
 
@@ -55,7 +55,7 @@ object SMTLibSerializer {
     case BVNot(e) =>
       if (e.width == 1) { s"(not ${serialize(e)})" }
       else { s"(bvnot ${serialize(e)})" }
-    case BVNegate(e) => s"(bvneg ${asBitVector(e)})"
+    case BVNegate(e)                                     => s"(bvneg ${asBitVector(e)})"
     case BVImplies(BVLiteral(v, 1), b) if v == 1         => serialize(b)
     case BVImplies(a, b)                                 => s"(=> ${serialize(a)} ${serialize(b)})"
     case BVEqual(a, b)                                   => s"(= ${serialize(a)} ${serialize(b)})"
@@ -74,19 +74,19 @@ object SMTLibSerializer {
     case ArrayRead(array, index)            => s"(select ${serialize(array)} ${asBitVector(index)})"
     case BVIte(cond, tru, fals)             => s"(ite ${serialize(cond)} ${serialize(tru)} ${serialize(fals)})"
     case BVFunctionCall(name, args, _)      => args.map(serializeArg).mkString(s"($name ", " ", ")")
-    case BVForall(variable, e) => s"(forall ((${variable.name} ${serialize(variable.tpe)})) ${serialize(e)})"
+    case BVForall(variable, e)              => s"(forall ((${variable.name} ${serialize(variable.tpe)})) ${serialize(e)})"
   }
 
   def serialize(e: ArrayExpr): String = e match {
-    case ArraySymbol(name, _, _)        => escapeIdentifier(name)
-    case ArrayStore(array, index, data) => s"(store ${serialize(array)} ${serialize(index)} ${serialize(data)})"
-    case ArrayIte(cond, tru, fals)      => s"(ite ${serialize(cond)} ${serialize(tru)} ${serialize(fals)})"
-    case c @ ArrayConstant(e, _)        => s"((as const ${serializeArrayType(c.indexWidth, c.dataWidth)}) ${serialize(e)})"
+    case ArraySymbol(name, _, _)             => escapeIdentifier(name)
+    case ArrayStore(array, index, data)      => s"(store ${serialize(array)} ${serialize(index)} ${serialize(data)})"
+    case ArrayIte(cond, tru, fals)           => s"(ite ${serialize(cond)} ${serialize(tru)} ${serialize(fals)})"
+    case c @ ArrayConstant(e, _)             => s"((as const ${serializeArrayType(c.indexWidth, c.dataWidth)}) ${serialize(e)})"
     case ArrayFunctionCall(name, args, _, _) => args.map(serializeArg).mkString(s"($name ", " ", ")")
   }
 
   def serialize(c: SMTCommand): String = c match {
-    case Comment(msg) => msg.split("\n").map("; " + _).mkString("\n")
+    case Comment(msg)                   => msg.split("\n").map("; " + _).mkString("\n")
     case DeclareUninterpretedSort(name) => s"(declare-sort ${escapeIdentifier(name)} 0)"
     case DefineFunction(name, args, e) =>
       val aa = args.map(a => s"(${serializeArg(a)} ${serializeArgTpe(a)})").mkString(" ")
@@ -100,9 +100,15 @@ object SMTLibSerializer {
   }
 
   private def serializeArgTpe(a: SMTFunctionArg): String =
-    a match { case u: UTSymbol => escapeIdentifier(u.tpe) case s: SMTExpr => serialize(s.tpe) }
+    a match {
+      case u: UTSymbol => escapeIdentifier(u.tpe)
+      case s: SMTExpr  => serialize(s.tpe)
+    }
   private def serializeArg(a: SMTFunctionArg): String =
-    a match { case u: UTSymbol => escapeIdentifier(u.name) case s: SMTExpr => serialize(s) }
+    a match {
+      case u: UTSymbol => escapeIdentifier(u.name)
+      case s: SMTExpr  => serialize(s)
+    }
 
   private def serializeArrayType(indexWidth: Int, dataWidth: Int): String =
     s"(Array ${serializeBitVectorType(indexWidth)} ${serializeBitVectorType(dataWidth)})"

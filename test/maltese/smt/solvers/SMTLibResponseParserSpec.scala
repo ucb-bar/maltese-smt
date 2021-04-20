@@ -7,7 +7,7 @@ package maltese.smt.solvers
 import org.scalatest.flatspec.AnyFlatSpec
 
 class SMTLibResponseParserSpec extends AnyFlatSpec {
-  behavior of "SMTLibResponseParser"
+  behavior.of("SMTLibResponseParser")
 
   def in(value: String): String = s"((in $value))"
 
@@ -50,6 +50,5 @@ class SMTLibResponseParserSpec extends AnyFlatSpec {
     val expected = Seq((None, BigInt(0)), (Some(BigInt(0)), BigInt(1)))
     assert(SMTLibResponseParser.parseMemValue(in(array)) == expected)
   }
-
 
 }
