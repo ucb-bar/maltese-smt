@@ -2,9 +2,7 @@
 // released under BSD 3-Clause License
 // author: Kevin Laeufer <laeufer@cs.berkeley.edu>
 
-package maltese.smt
-
-import maltese.mc._
+package maltese.mc
 
 import org.scalatest.flatspec.AnyFlatSpec
 
