@@ -3,7 +3,7 @@ package maltese.mc
 import org.scalatest.flatspec.AnyFlatSpec
 
 class Btor2WitnessParserTest extends AnyFlatSpec {
-  behavior of "Btor2WitnessParser"
+  behavior.of("Btor2WitnessParser")
 
   val noStateWitness =
     """sat

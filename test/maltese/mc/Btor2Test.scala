@@ -2,13 +2,12 @@
 // released under BSD 3-Clause License
 // author: Kevin Laeufer <laeufer@cs.berkeley.edu>
 
-
 package maltese.mc
 
 import maltese.smt._
 import org.scalatest.flatspec.AnyFlatSpec
 
-class Btor2Test extends AnyFlatSpec{
+class Btor2Test extends AnyFlatSpec {
 
   // this function actually parses, serializes and parses again
   // in order to also test the serialization
@@ -69,7 +68,7 @@ class Btor2Test extends AnyFlatSpec{
     val s0 = sys.states.head
     assert(s0.sym.name == "_state_0")
     assert(s0.init.contains(BVLiteral(0, 3)))
-    assert(s0.next.contains(BVOp(Op.Add,s0.sym.asInstanceOf[BVExpr], BVLiteral(1, 3))))
+    assert(s0.next.contains(BVOp(Op.Add, s0.sym.asInstanceOf[BVExpr], BVLiteral(1, 3))))
     val b0 = sys.signals.find(_.lbl == IsBad).get
     assert(b0.e == BVEqual(s0.sym.asInstanceOf[BVExpr], BVLiteral(7, 3)))
   }
@@ -182,7 +181,11 @@ class Btor2Test extends AnyFlatSpec{
     assert(data.sym.tpe == BVType(32))
     assert(mem.sym.tpe == ArrayType(5, 32))
 
-    assert(mem_n.init.contains(ArrayStore(mem.sym.asInstanceOf[ArrayExpr], addr.sym.asInstanceOf[BVExpr], data.sym.asInstanceOf[BVExpr])))
+    assert(
+      mem_n.init.contains(
+        ArrayStore(mem.sym.asInstanceOf[ArrayExpr], addr.sym.asInstanceOf[BVExpr], data.sym.asInstanceOf[BVExpr])
+      )
+    )
     val mem_a = ArrayRead(mem.sym.asInstanceOf[ArrayExpr], a.sym.asInstanceOf[BVExpr])
     val mem_n_a = ArrayRead(mem_n.sym.asInstanceOf[ArrayExpr], a.sym.asInstanceOf[BVExpr])
     assert(b0.e == BVNot(ArrayEqual(mem_a.asInstanceOf[ArrayExpr], mem_n_a.asInstanceOf[ArrayExpr])))
