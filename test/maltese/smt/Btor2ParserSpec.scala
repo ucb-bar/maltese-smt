@@ -8,7 +8,6 @@ import maltese.mc._
 
 import org.scalatest.flatspec.AnyFlatSpec
 
-
 class Btor2ParserSpec extends AnyFlatSpec {
   // this example if from the official btor2tools repository
   private val count2 =

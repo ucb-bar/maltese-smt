@@ -6,7 +6,7 @@ package maltese.smt
 
 /** Constant Propagation */
 class SMTSimplifierLiteralsSpec extends SMTSimplifierBaseSpec {
-  behavior of "SMTSimplifier with literals"
+  behavior.of("SMTSimplifier with literals")
 
   import SMTSimplifierLiteralsSpec._
 
@@ -44,7 +44,7 @@ class SMTSimplifierLiteralsSpec extends SMTSimplifierBaseSpec {
     check(BVNegate(BVLiteral("b0")), "1'b0")
 
     // neg(a) = add(not(a), 1)
-    SomeLiterals.foreach{ l =>
+    SomeLiterals.foreach { l =>
       check(BVNegate(l), BVOp(Op.Add, BVNot(l), BVLiteral(1, l.width)))
     }
   }
@@ -56,12 +56,10 @@ class SMTSimplifierLiteralsSpec extends SMTSimplifierBaseSpec {
 
   // TODO: comparison
 
-
   it should "simplify add of literals" in {
     check(BVOp(Op.Add, BVLiteral("b1011"), BVLiteral("b1011")), "4'b110")
     check(BVOp(Op.Add, BVLiteral("b1011"), BVLiteral("b1001")), "4'b100")
   }
-
 
   private def check(in: SMTExpr, expected: String): Unit = {
     val actual = simplify(in).toString
@@ -77,6 +75,13 @@ class SMTSimplifierLiteralsSpec extends SMTSimplifierBaseSpec {
 
 object SMTSimplifierLiteralsSpec {
   private val SomeLiterals = List(
-    "b0", "b1", "b00", "b01", "b10", "b11", "b11111010101", "b111101011010101",
+    "b0",
+    "b1",
+    "b00",
+    "b01",
+    "b10",
+    "b11",
+    "b11111010101",
+    "b111101011010101"
   ).map(BVLiteral(_))
 }

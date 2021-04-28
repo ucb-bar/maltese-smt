@@ -9,4 +9,4 @@ package maltese.smt.solvers
 class Yices2Spec extends BasicSolverSpec(() => Yices2()) {
 
 }
-*/
+ */

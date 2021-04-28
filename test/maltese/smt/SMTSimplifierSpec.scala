@@ -7,7 +7,7 @@ package maltese.smt
 import org.scalatest.flatspec.AnyFlatSpec
 
 class SMTSimplifierSpec extends SMTSimplifierBaseSpec {
-  behavior of "SMTSimplifier"
+  behavior.of("SMTSimplifier")
 
   it should "simplify boolean and" in {
 
@@ -30,7 +30,6 @@ class SMTSimplifierSpec extends SMTSimplifierBaseSpec {
 
     assert(simplify(and(not(b), not(b))) == not(b))
   }
-
 
   it should "simplify boolean or" in {
     assert(simplify(or(b, fals)) == b)
@@ -58,7 +57,7 @@ class SMTSimplifierSpec extends SMTSimplifierBaseSpec {
     assert(simplify(BVEqual(b, tru)) == b)
     assert(simplify(BVEqual(b, fals)) == not(b))
   }
-  
+
   it should "simplify negations" in {
     assert(simplify(not(b)) == not(b))
     assert(simplify(not(not(b))) == b)
@@ -79,8 +78,10 @@ class SMTSimplifierSpec extends SMTSimplifierBaseSpec {
     assert(simplify(BVEqual(BVConcat(a, b), c)).toString == "and(eq(a, c[4:3]), eq(b, c[2:0]))")
 
     val (a0, a1) = (bv("a0", 1), bv("a1", 1))
-    assert(simplify(BVEqual(c, BVConcat(BVConcat(a1, a0), b))).toString ==
-      "and(and(eq(a1, c[4]), eq(a0, c[3])), eq(b, c[2:0]))")
+    assert(
+      simplify(BVEqual(c, BVConcat(BVConcat(a1, a0), b))).toString ==
+        "and(and(eq(a1, c[4]), eq(a0, c[3])), eq(b, c[2:0]))"
+    )
   }
 
   it should "simplify bit masks, i.e. bitwise and with a constant" in {
@@ -101,8 +102,8 @@ abstract class SMTSimplifierBaseSpec extends AnyFlatSpec {
   protected val tru = BVLiteral(1, 1)
   protected val fals = BVLiteral(0, 1)
   protected val (b, c) = (BVSymbol("b", 1), BVSymbol("c", 1))
-  protected def and(a: BVExpr, b: BVExpr): BVExpr = BVOp(Op.And, a, b)
-  protected def or(a: BVExpr, b: BVExpr): BVExpr = BVOp(Op.Or, a, b)
-  protected def not(a: BVExpr): BVExpr = BVNot(a)
+  protected def and(a:   BVExpr, b:     BVExpr):  BVExpr = BVOp(Op.And, a, b)
+  protected def or(a:    BVExpr, b: BVExpr): BVExpr = BVOp(Op.Or, a, b)
+  protected def not(a:   BVExpr): BVExpr = BVNot(a)
   protected def bv(name: String, width: Int = 4): BVSymbol = BVSymbol(name, width)
 }

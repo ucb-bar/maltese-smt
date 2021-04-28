@@ -5,21 +5,25 @@
 package maltese.smt
 
 /** Slice simplification gets its own spec since it is so important
- *  for recovering boolean operations out of word level operations.
- * */
+  *  for recovering boolean operations out of word level operations.
+  */
 class SMTSimplifierSliceSpec extends SMTSimplifierBaseSpec {
-  behavior of "SMTSimplifier"
+  behavior.of("SMTSimplifier")
 
   it should "simplify slice no-op" in {
-    assert(simplify(BVSlice(bv("a", 3), 2, 0))   == bv("a", 3))
+    assert(simplify(BVSlice(bv("a", 3), 2, 0)) == bv("a", 3))
     assert(simplify(BVSlice(bv("a", 13), 12, 0)) == bv("a", 13))
   }
 
   it should "simplify slice of slice" in {
-    assert(simplify(BVSlice(BVSlice(bv("a", 3), 2,1), 1, 1)) ==
-      BVSlice(bv("a", 3), 2,2))
-    assert(simplify(BVSlice(BVSlice(BVSlice(bv("a", 5), 4,1), 3, 1), 2, 2)) ==
-      BVSlice(bv("a", 5), 4,4))
+    assert(
+      simplify(BVSlice(BVSlice(bv("a", 3), 2, 1), 1, 1)) ==
+        BVSlice(bv("a", 3), 2, 2)
+    )
+    assert(
+      simplify(BVSlice(BVSlice(BVSlice(bv("a", 5), 4, 1), 3, 1), 2, 2)) ==
+        BVSlice(bv("a", 5), 4, 4)
+    )
   }
 
   it should "simplify slice on a literal" in {
@@ -31,7 +35,7 @@ class SMTSimplifierSliceSpec extends SMTSimplifierBaseSpec {
     assert(word.toString == "concat(3'b11, a)")
     assert(simplify(BVSlice(word, 4, 2)).toString == "3'b11")
     assert(simplify(BVSlice(word, 4, 3)).toString == "2'b1")
-    assert(simplify(BVSlice(word, 1, 0)).toString== "a")
+    assert(simplify(BVSlice(word, 1, 0)).toString == "a")
     assert(simplify(BVSlice(word, 1, 1)).toString == "a[1]")
   }
 
@@ -47,13 +51,13 @@ class SMTSimplifierSliceSpec extends SMTSimplifierBaseSpec {
     val longLeft = BVConcat(BVConcat(bv("a", 2), BVLiteral(3, 3)), bv("b", 2))
     val longRight = BVConcat(bv("a", 2), BVConcat(BVLiteral(3, 3), bv("b", 2)))
 
-    assert(simplify(BVSlice(longLeft,  6, 5)).toString == "a")
+    assert(simplify(BVSlice(longLeft, 6, 5)).toString == "a")
     assert(simplify(BVSlice(longRight, 6, 5)).toString == "a")
 
-    assert(simplify(BVSlice(longLeft,  4, 2)).toString == "3'b11")
+    assert(simplify(BVSlice(longLeft, 4, 2)).toString == "3'b11")
     assert(simplify(BVSlice(longRight, 4, 2)).toString == "3'b11")
 
-    assert(simplify(BVSlice(longLeft,  1, 0)).toString == "b")
+    assert(simplify(BVSlice(longLeft, 1, 0)).toString == "b")
     assert(simplify(BVSlice(longRight, 1, 0)).toString == "b")
   }
 
@@ -62,13 +66,13 @@ class SMTSimplifierSliceSpec extends SMTSimplifierBaseSpec {
     val longLeft = BVConcat(BVConcat(bv("a", 2), BVLiteral(3, 3)), bv("b", 2))
     val longRight = BVConcat(bv("a", 2), BVConcat(BVLiteral(3, 3), bv("b", 2)))
 
-    assert(simplify(BVSlice(longLeft,  6, 2)).toString == "concat(a, 3'b11)")
+    assert(simplify(BVSlice(longLeft, 6, 2)).toString == "concat(a, 3'b11)")
     assert(simplify(BVSlice(longRight, 6, 2)).toString == "concat(a, 3'b11)")
 
-    assert(simplify(BVSlice(longLeft,  6, 3)) == simplify(BVConcat(bv("a", 2), BVSlice(BVLiteral(3, 3), 2, 1))))
+    assert(simplify(BVSlice(longLeft, 6, 3)) == simplify(BVConcat(bv("a", 2), BVSlice(BVLiteral(3, 3), 2, 1))))
     assert(simplify(BVSlice(longRight, 6, 3)) == simplify(BVConcat(bv("a", 2), BVSlice(BVLiteral(3, 3), 2, 1))))
 
-    assert(simplify(BVSlice(longLeft,  5, 2)).toString == "concat(a[0], 3'b11)")
+    assert(simplify(BVSlice(longLeft, 5, 2)).toString == "concat(a[0], 3'b11)")
     assert(simplify(BVSlice(longRight, 5, 2)).toString == "concat(a[0], 3'b11)")
   }
 

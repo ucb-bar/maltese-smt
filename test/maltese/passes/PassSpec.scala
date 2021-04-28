@@ -7,13 +7,13 @@ package maltese.passes
 import maltese.mc.{Btor2, TransitionSystem}
 import org.scalatest.flatspec.AnyFlatSpec
 
-abstract class PassSpec(pass: Pass) extends AnyFlatSpec{
+abstract class PassSpec(pass: Pass) extends AnyFlatSpec {
   protected def prereqs: Iterable[Pass] = Seq()
 
   def compile(src: String): TransitionSystem = {
     val sys = Btor2.read(src, inlineSignals = false)
     val passes = prereqs ++ Iterator(pass)
-    passes.foldLeft(sys){ case (s, p) => p.run(s) }
+    passes.foldLeft(sys) { case (s, p) => p.run(s) }
   }
 
   def check(src: String, expected: String): Unit = {
