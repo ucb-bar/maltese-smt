@@ -16,8 +16,15 @@ class Btor2WitnessParserTest extends AnyFlatSpec {
       |
       |""".stripMargin
 
-  it should "parse a witness without state" ignore { // TODO: fix witness parser
-    Btor2WitnessParser.read(noStateWitness.split("\n"))
+  it should "parse a witness without state" in {
+    val witnesses = Btor2WitnessParser.read(noStateWitness.split("\n"))
+
+    assert(witnesses.length == 1, "there is only a single counter example")
+    val w = witnesses.head
+    assert(w.memInit.isEmpty, "there are no memories in the design")
+    assert(w.regInit.isEmpty, "there are no states in the design")
+    assert(w.inputs.head == Map(0 -> 0, 1 -> BigInt("11111011", 2), 2 -> BigInt("101", 2)))
+    assert(w.inputs.length == 1, "there is only a single cycle")
   }
 
   val fsmWitness =

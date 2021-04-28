@@ -95,8 +95,13 @@ object Btor2WitnessParser {
           next
         }
         case s: Props => {
-          assert(line == "#0", s"Expected initial state frame, not: $line")
-          newStates()
+          if (line.startsWith("@")) {
+            // no state initialization frame -> jump straight to inputs
+            newInputs()
+          } else {
+            assert(line == "#0", s"Expected initial state frame, not: $line")
+            newStates()
+          }
         }
         case s: States => {
           if (line == ".") { finishWitness() }
