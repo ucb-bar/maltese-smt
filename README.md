@@ -1,1 +1,0 @@
-# maltese-smt
