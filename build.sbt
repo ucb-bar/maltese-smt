@@ -5,7 +5,7 @@ name := "maltese-smt"
 version := "0.5-SNAPSHOT"
 
 // scala settings
-scalaVersion := "2.12.13"
+scalaVersion := "2.13.5"
 crossScalaVersions := Seq("2.12.13", "2.13.5")
 scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked")
 // Scala 2.12 requires Java 8.
