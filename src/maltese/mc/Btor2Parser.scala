@@ -134,10 +134,13 @@ private object Btor2Parser {
       def expr(offset: Int): SMTExpr = {
         assert(parts.length > 3 + offset, s"parts(${3 + offset}) does not exist! ${parts.mkString(", ")}")
         val nid = Integer.parseInt(parts(3 + offset))
-        assert(signals.contains(nid), s"Unknown node #$nid")
-        val sig = signals(nid)
-        if (inlineSignals) { sig.e }
+        val absNid = math.abs(nid)
+        assert(signals.contains(absNid), s"Unknown node #$absNid")
+        val sig = signals(absNid)
+        val e = if (inlineSignals) { sig.e }
         else { sig.toSymbol }
+        if (nid < 0) { BVNot(e.asInstanceOf[BVExpr]) }
+        else { e }
       }
       def bvExpr(offset:    Int) = expr(offset).asInstanceOf[BVExpr]
       def arrayExpr(offset: Int) = expr(offset).asInstanceOf[ArrayExpr]

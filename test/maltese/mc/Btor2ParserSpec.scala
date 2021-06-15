@@ -52,4 +52,46 @@ class Btor2ParserSpec extends AnyFlatSpec {
     val sys = Btor2.read(count2, inlineSignals = true, defaultName = "counter2").serialize
     assert(sys.trim == expected.trim)
   }
+
+  // this example if from the official btor2tools repository
+  private val twocount2 =
+    """1 sort bitvec 1
+      |2 sort bitvec 2
+      |3 input 1 turn
+      |4 zero 2
+      |5 state 2 a
+      |6 state 2 b
+      |7 init 2 5 4
+      |8 init 2 6 4
+      |9 one 2
+      |10 add 2 5 9
+      |11 add 2 6 9
+      |12 ite 2 3 5 10
+      |13 ite 2 -3 6 11
+      |14 next 2 5 12
+      |15 next 2 6 13
+      |16 ones 2
+      |17 eq 1 5 16
+      |18 eq 1 6 16
+      |19 and 1 17 18
+      |20 bad 19
+      |""".stripMargin
+
+  it should "parse twocount2 which uses negative node ids" in {
+    val expected =
+      """twocount2
+        |input turn : bv<1>
+        |bad _bad_0 : bv<1> = and(eq(a, 2'b11), eq(b, 2'b11))
+        |state a : bv<2>
+        |  [init] 2'b0
+        |  [next] ite(turn, a, add(a, 2'b1))
+        |state b : bv<2>
+        |  [init] 2'b0
+        |  [next] ite(not(turn), b, add(b, 2'b1))
+        |""".stripMargin
+
+    val sys = Btor2.read(twocount2, inlineSignals = true, defaultName = "twocount2").serialize
+    assert(sys.trim == expected.trim)
+  }
+
 }
