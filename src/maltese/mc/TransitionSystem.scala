@@ -54,6 +54,9 @@ object TransitionSystem {
       })
   }
 
+  def getAllNames(sys: TransitionSystem): Seq[String] =
+    sys.inputs.map(_.name) ++ sys.signals.map(_.name) ++ sys.states.map(_.name)
+
   /** prefixes all signal names with the name of the transition system */
   def prefixSignals(sys: TransitionSystem): TransitionSystem = {
     val prefix = sys.name + "."
