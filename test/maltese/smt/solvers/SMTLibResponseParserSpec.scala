@@ -51,4 +51,10 @@ class SMTLibResponseParserSpec extends AnyFlatSpec {
     assert(SMTLibResponseParser.parseMemValue(in(array)) == expected)
   }
 
+  it should "parse a value represented as (_ bv0 32)" in {
+    def z3Answer(v: Int) = s"(((count_f s0) (_ bv$v 32)))"
+    assert(SMTLibResponseParser.parseValue(z3Answer(0)).get == 0)
+    assert(SMTLibResponseParser.parseValue(z3Answer(1234567)).get == 1234567)
+  }
+
 }

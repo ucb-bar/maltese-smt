@@ -4,13 +4,20 @@
 
 package maltese.smt.solvers
 
+import scala.annotation.tailrec
+
 object SMTLibResponseParser {
-  def parseValue(v: String): Option[BigInt] = {
-    val tree = SExprParser.parse(v)
-    tree match {
-      case SExprNode(List(SExprNode(List(_, SExprLeaf(valueStr))))) => parseBVLiteral(valueStr)
-      case _                                                        => throw new NotImplementedError(s"Unexpected response: $v")
-    }
+  def parseValue(v: String): Option[BigInt] = parseValue(SExprParser.parse(v))
+
+  @tailrec
+  private def parseValue(e: SExpr): Option[BigInt] = e match {
+    case SExprNode(List(SExprNode(List(_, SExprLeaf(valueStr))))) => parseBVLiteral(valueStr)
+    // example: (_ bv0 32)
+    case SExprNode(List(SExprNode(List(_, SExprNode(List(SExprLeaf("_"), SExprLeaf(value), SExprLeaf(width)))))))
+        if value.startsWith("bv") =>
+      Some(BigInt(value.drop(2)))
+    case SExprNode(List(one)) => parseValue(one)
+    case _                    => throw new NotImplementedError(s"Unexpected response: $e")
   }
 
   type MemInit = Seq[(Option[BigInt], BigInt)]
