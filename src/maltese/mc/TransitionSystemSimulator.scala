@@ -139,7 +139,7 @@ class TransitionSystemSimulator(sys: TransitionSystem, val maxMemVcdSize: Int = 
               if (memInit.contains(ii)) {
                 writesToMemory(depth, bits, memInit(ii))
               } else {
-                println(s"WARN: Initial value for ${state.sym} ($ii) is missing!")
+                // println(s"WARN: Initial value for ${state.sym} ($ii) is missing!")
                 Memory(randomSeq(depth, bits))
               }
           }
@@ -151,8 +151,8 @@ class TransitionSystemSimulator(sys: TransitionSystem, val maxMemVcdSize: Int = 
             case None =>
               regInit.get(ii) match {
                 case Some(value) => value
-                case None =>
-                  println(s"WARN: Initial value for ${state.sym} ($ii) is missing!")
+                case None        =>
+                  // println(s"WARN: Initial value for ${state.sym} ($ii) is missing!")
                   randomBits(state.sym.asInstanceOf[BVSymbol].width)
               }
           }
@@ -257,8 +257,8 @@ class TransitionSystemSimulator(sys: TransitionSystem, val maxMemVcdSize: Int = 
             s"In step #$index: Expected properties ${props.map("b" + _).mkString(", ")} to fail, instead ${failed.map("b" + _).mkString(", ")} failed"
           );
         }
-        //assert(props.subsetOf(failed.toSet), s"In step #$index: Expected properties ${props.map("b"+_).mkString(", ")} to fail, instead ${failed.map("b"+_).mkString(", ")} failed")
-        println(failedPropertiesMsg)
+      //assert(props.subsetOf(failed.toSet), s"In step #$index: Expected properties ${props.map("b"+_).mkString(", ")} to fail, instead ${failed.map("b"+_).mkString(", ")} failed")
+      // println(failedPropertiesMsg)
     }
 
     // increment time
