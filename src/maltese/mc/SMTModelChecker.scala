@@ -301,7 +301,10 @@ object SMTTransitionSystemEncoder {
       smt.SMTEqual(newState, nextOldState)
     }
     // the transition relation is over two states
-    val transitionExpr = replaceSymbols(SignalSuffix, State)(smt.BVAnd(transitionRelations))
+    val transitionExpr = if (transitionRelations.isEmpty) { smt.True() }
+    else {
+      replaceSymbols(SignalSuffix, State)(smt.BVAnd(transitionRelations))
+    }
     cmds += DefineFunction(name + "_t", List(State, StateNext), transitionExpr)
 
     // The init relation just asserts that all init function hold
