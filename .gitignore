@@ -2,6 +2,7 @@
 /project/target
 /project/project
 /target/
+/out/
 
 # IDE
 .project
