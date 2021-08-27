@@ -46,10 +46,6 @@ object SMTExprMap {
       val (nA, nB, nC) = (bv(a), bv(b), bv(c))
       if (nA.eq(a) && nB.eq(b) && nC.eq(c)) old else BVIte(nA, nB, nC)
     // n-ary
-    case old @ BVSelect(choices) =>
-      val nChoices = choices.map(c => (bv(c._1), bv(c._2)))
-      val anyNew = nChoices.zip(choices).exists { case (n, o) => !n._1.eq(o._1) || !n._2.eq(o._2) }
-      if (anyNew) BVSelect(nChoices) else old
     case old @ BVFunctionCall(name, args, width) =>
       val nArgs = args.map {
         case b: BVExpr    => bv(b)

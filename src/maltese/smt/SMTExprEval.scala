@@ -39,7 +39,6 @@ object SMTExprEval {
         assert(c == 0 || c == 1)
         if (c == 1) { eval(tru) }
         else { eval(fals) }
-      case BVSelect(_)      => throw new NotImplementedError("BVSelect")
       case ArrayEqual(a, b) => if (evalArray(a) == evalArray(b)) BigInt(1) else BigInt(0)
       case BVForall(variable, e) =>
         val maxValue = (BigInt(1) << variable.width) - 1

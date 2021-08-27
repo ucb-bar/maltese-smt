@@ -4,18 +4,21 @@
 
 package maltese.smt
 
+/** base trait for all SMT expressions */
 sealed trait SMTExpr extends SMTFunctionArg {
   def tpe:      SMTType
   def children: List[SMTExpr]
-  def foreachExpr(f: SMTExpr => Unit):    Unit = children.foreach(f)
-  def mapExpr(f:     SMTExpr => SMTExpr): SMTExpr = SMTExprMap.mapExpr(this, f)
+  def mapExpr(f: SMTExpr => SMTExpr): SMTExpr = SMTExprMap.mapExpr(this, f)
 }
 sealed trait SMTSymbol extends SMTExpr with SMTNullaryExpr {
   val name: String
-  def toStringWithType: String
+
+  /** keeps the type of the symbol while changing the name */
   def rename(newName: String): SMTSymbol
 }
 object SMTSymbol {
+
+  /** makes a SMTSymbol of the same type as the expression */
   def fromExpr(name: String, e: SMTExpr): SMTSymbol = e match {
     case b: BVExpr    => BVSymbol(name, b.width)
     case a: ArrayExpr => ArraySymbol(name, a.indexWidth, a.dataWidth)
@@ -25,6 +28,7 @@ sealed trait SMTNullaryExpr extends SMTExpr {
   override def children: List[SMTExpr] = List()
 }
 
+/** a SMT bit vector expression: https://smtlib.cs.uiowa.edu/theories-FixedSizeBitVectors.shtml */
 sealed trait BVExpr extends SMTExpr {
   def width: Int
   def tpe:               BVType = BVType(width)
@@ -43,14 +47,14 @@ object BVLiteral {
 }
 case class BVSymbol(name: String, width: Int) extends BVExpr with SMTSymbol {
   assert(!name.contains("|"), s"Invalid id $name contains escape character `|`")
-  // assert(!name.contains("\\"), s"Invalid id $name contains `\\`")
   assert(width > 0, "Zero width bit vectors are not supported!")
-  override def toStringWithType: String = name + " : " + SMTExpr.serializeType(this)
   override def rename(newName: String) = BVSymbol(newName, width)
 }
 
 sealed trait BVUnaryExpr extends BVExpr {
   def e: BVExpr
+
+  /** same function, different child, e.g.: not(x) -- reapply(Y) --> not(Y) */
   def reapply(expr: BVExpr): BVUnaryExpr
   override def children: List[BVExpr] = List(e)
 }
@@ -80,6 +84,8 @@ sealed trait BVBinaryExpr extends BVExpr {
   def a: BVExpr
   def b: BVExpr
   override def children: List[BVExpr] = List(a, b)
+
+  /** same function, different child, e.g.: add(a,b) -- reapply(a,c) --> add(a,c) */
   def reapply(nA: BVExpr, nB: BVExpr): BVBinaryExpr
 }
 case class BVEqual(a: BVExpr, b: BVExpr) extends BVBinaryExpr {
@@ -95,12 +101,15 @@ class BVImplies(val a: BVExpr, val b: BVExpr) extends BVBinaryExpr {
   override def reapply(nA: BVExpr, nB: BVExpr) = new BVImplies(nA, nB)
 }
 object BVImplies {
-  def apply(a: BVExpr, b: BVExpr): BVExpr = (a, b) match {
-    case (True(), b)  => b // (!1 || b) = b
-    case (False(), _) => True() // (!0 || _) = (1 || _) = 1
-    case (_, True())  => True() // (!a || 1) = 1
-    case (a, False()) => BVNot(a) // (!a || 0) = !a
-    case (a, b)       => new BVImplies(a, b)
+  def apply(a: BVExpr, b: BVExpr): BVExpr = {
+    assert(a.width == b.width, s"Both argument need to be the same width!")
+    (a, b) match {
+      case (True(), b)  => b // (!1 || b) = b
+      case (False(), _) => True() // (!0 || _) = (1 || _) = 1
+      case (_, True())  => True() // (!a || 1) = 1
+      case (a, False()) => BVNot(a) // (!a || 0) = !a
+      case (a, b)       => new BVImplies(a, b)
+    }
   }
   def unapply(i: BVImplies): Some[(BVExpr, BVExpr)] = Some((i.a, i.b))
 }
@@ -150,17 +159,6 @@ case class BVIte(cond: BVExpr, tru: BVExpr, fals: BVExpr) extends BVExpr {
   override def children: List[BVExpr] = List(cond, tru, fals)
 }
 
-/** Custom node which can represent nested ites.
-  * Must ensure (usually by-construction) that all choices are mutually exclusive.
-  */
-case class BVSelect(choices: List[(BVExpr, BVExpr)]) extends BVExpr {
-  assert(choices.nonEmpty, "needs at least one choice")
-  assert(choices.forall(_._1.width == 1), "all conditions need to be 1-bit expressions")
-  override val width: Int = choices.head._2.width
-  assert(choices.forall(_._2.width == width), "all values must be of the same width")
-  override def children: List[SMTExpr] = choices.flatMap(c => List(c._1, c._2))
-}
-
 sealed trait ArrayExpr extends SMTExpr {
   val indexWidth: Int
   val dataWidth:  Int
@@ -170,7 +168,6 @@ sealed trait ArrayExpr extends SMTExpr {
 case class ArraySymbol(name: String, indexWidth: Int, dataWidth: Int) extends ArrayExpr with SMTSymbol {
   assert(!name.contains("|"), s"Invalid id $name contains escape character `|`")
   assert(!name.contains("\\"), s"Invalid id $name contains `\\`")
-  override def toStringWithType: String = s"$name : bv<$indexWidth> -> bv<$dataWidth>"
   override def rename(newName: String) = ArraySymbol(newName, indexWidth, dataWidth)
 }
 case class ArrayConstant(e: BVExpr, indexWidth: Int) extends ArrayExpr {

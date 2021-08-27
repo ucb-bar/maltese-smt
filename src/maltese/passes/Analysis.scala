@@ -29,6 +29,6 @@ object Analysis {
   private def countUses(e: SMTExpr)(implicit useCount: mutable.Map[String, Int]): Unit = e match {
     case BVSymbol(name, _)       => useCount(name) += 1
     case ArraySymbol(name, _, _) => useCount(name) += 1
-    case other                   => other.foreachExpr(countUses)
+    case other                   => other.children.foreach(countUses)
   }
 }

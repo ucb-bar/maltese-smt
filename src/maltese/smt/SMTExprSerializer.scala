@@ -21,7 +21,7 @@ object SMTExprSerializer {
     case BVSlice(e, hi, lo)             => s"${serialize(e)}[$hi:$lo]"
     case BVNot(e)                       => s"not(${serialize(e)})"
     case BVNegate(e)                    => s"neg(${serialize(e)})"
-    case BVForall(variable, e)          => s"forall(${variable.toStringWithType}, ${serialize(e)}"
+    case BVForall(variable, e)          => s"forall(${variable.name} : bv<${variable.width}, ${serialize(e)})"
     // binary
     case BVEqual(a, b)                                   => s"eq(${serialize(a)}, ${serialize(b)})"
     case BVComparison(Compare.Greater, a, b, false)      => s"ugt(${serialize(a)}, ${serialize(b)})"
@@ -36,8 +36,6 @@ object SMTExprSerializer {
     // ternary
     case BVIte(cond, tru, fals) => s"ite(${serialize(cond)}, ${serialize(tru)}, ${serialize(fals)})"
     // n-ary
-    case BVSelect(choices) =>
-      choices.map { case (c, v) => serialize(c) + " -> " + serialize(v) }.mkString("select(", ", ", ")")
     case BVFunctionCall(name, args, _) => name + serialize(args).mkString("(", ",", ")")
   }
 

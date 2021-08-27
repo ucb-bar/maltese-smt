@@ -178,9 +178,6 @@ class Yices2 private (lib: Yices2Api, conf: Yices2Api.ConfigT, ctx: Yices2Api.Co
     // ternary
     case BVIte(cond, tru, fals) =>
       assertNoError(lib.yices_ite(convert(cond), convert(tru), convert(fals)))
-    // n-ary
-    case BVSelect(_) =>
-      throw new NotImplementedError("BVSelect")
   }
 
   /** ensures that the result will be a bit vector */
