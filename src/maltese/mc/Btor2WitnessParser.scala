@@ -51,7 +51,7 @@ object Btor2WitnessParser {
         /* skip comments */
         return
       }
-      val parts = line.split(" ")
+      val parts = line.split(" ").toIndexedSeq
       def uintStartingAt(ii: Int) = Integer.parseUnsignedInt(line.substring(ii))
 
       //print(state)

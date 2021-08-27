@@ -11,10 +11,10 @@ class Btor2Test extends AnyFlatSpec {
 
   // this function actually parses, serializes and parses again
   // in order to also test the serialization
-  def parse(src: Seq[String], inlineSignals: Boolean = false): TransitionSystem = {
-    val sys0 = Btor2Parser.read(src.toIterator, inlineSignals, defaultName = "UNKNOWN")
+  def parse(src: Iterable[String], inlineSignals: Boolean = false): TransitionSystem = {
+    val sys0 = Btor2Parser.read(src.iterator, inlineSignals, defaultName = "UNKNOWN")
     val src1 = Btor2Serializer.serialize(sys0)
-    val sys1 = Btor2Parser.read(src1.toIterator, inlineSignals, defaultName = "UNKNOWN")
+    val sys1 = Btor2Parser.read(src1.iterator, inlineSignals, defaultName = "UNKNOWN")
     sys1
   }
 

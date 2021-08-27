@@ -143,7 +143,7 @@ case class LocalEvalCtx(bv: Map[String, BigInt], array: Map[String, ArrayValue] 
   )
   override def getArraySymbol(name: String) = array(name)
 
-  private val variables = scala.collection.mutable.ArrayStack[(String, BigInt)]()
+  private val variables = scala.collection.mutable.Stack[(String, BigInt)]()
   override def startVariableScope(name: String, value: BigInt): Unit = {
     variables.push((name, value))
   }

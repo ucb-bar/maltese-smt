@@ -37,11 +37,11 @@ class TransitionSystemSimulator(sys: TransitionSystem, val maxMemVcdSize: Int = 
   //
   private val badNameToIndex: Map[String, Int] = sys.signals.filter(_.lbl == IsBad).map(_.name).zipWithIndex.toMap
 
-  private case class Memory(data: Seq[BigInt]) extends smt.ArrayValue {
+  private case class Memory(data: IndexedSeq[BigInt]) extends smt.ArrayValue {
     def depth: Int = data.size
     def write(index: Option[BigInt], value: BigInt): Memory = {
       index match {
-        case None => Memory(Array.fill(depth)(value))
+        case None => Memory(IndexedSeq.fill(depth)(value))
         case Some(ii) =>
           assert(ii >= 0 && ii < depth, s"index ($ii) needs to be non-negative smaller than the depth ($depth)!")
           Memory(data.updated(ii.toInt, value))
@@ -57,7 +57,7 @@ class TransitionSystemSimulator(sys: TransitionSystem, val maxMemVcdSize: Int = 
     }
   }
   private def randomBits(bits: Int): BigInt = BigInt(bits, scala.util.Random)
-  private def randomSeq(depth: Int, bits: Int): Seq[BigInt] = (0 to depth).map(_ => randomBits(bits))
+  private def randomSeq(depth: Int, bits: Int): IndexedSeq[BigInt] = (0 to depth).map(_ => randomBits(bits))
 
   private def writesToMemory(depth: Int, bits: Int, writes: Iterable[(Option[BigInt], BigInt)]): Memory =
     writes.foldLeft(Memory(randomSeq(depth, bits))) { case (mem, (index, value)) => mem.write(index, value) }
@@ -83,7 +83,7 @@ class TransitionSystemSimulator(sys: TransitionSystem, val maxMemVcdSize: Int = 
     }
 
     override def constArray(indexWidth: Int, value: BigInt) = {
-      Memory(Seq.fill(arrayDepth(indexWidth))(value))
+      Memory(IndexedSeq.fill(arrayDepth(indexWidth))(value))
     }
   }
 
