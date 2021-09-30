@@ -32,9 +32,7 @@ object ExpressionConverter {
         case IsConstraint => mc.IsConstraint
         case IsBad        => mc.IsBad
       }
-      val eMaltese = toMaltese(s.e)
-      val expr = if (lbl == mc.IsBad) m.BVNot(eMaltese.asInstanceOf[m.BVExpr]) else eMaltese
-      mc.Signal(s.name, expr, lbl)
+      mc.Signal(s.name, toMaltese(s.e), lbl)
     }
     mc.TransitionSystem(sys.name, inputs.toList, states.toList, signals.toList)
   }
