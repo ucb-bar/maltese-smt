@@ -70,31 +70,13 @@ jobs:
       - name: Check Formatting
         run: sbt scalafmtCheckAll
 
-  mill:
-    name: Mill Sanity Check
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        scala: [2.13.5, 2.12.13]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Cache
-        uses: coursier/cache-action@v5
-      - name: Setup Mill
-        uses: jodersky/setup-mill@v0.2.3
-        with:
-          mill-version: 0.9.9
-      - name: Mill sanity check
-        run: mill _[${{ matrix.scala }}].compile
-
   # Sentinel job to simplify how we specify which checks need to pass in branch
   # protection and in Mergify
   #
   # When adding new jobs, please add them to `needs` below
   all_tests_passed:
     name: "all tests passed"
-    needs: [test, doc, mill]
+    needs: [test, doc]
     runs-on: ubuntu-latest
     steps:
       - run: echo Success!
