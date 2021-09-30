@@ -15,7 +15,7 @@ trait Solver {
   def supportsConstArrays:            Boolean
   def supportsUninterpretedFunctions: Boolean
 
-  def createContext(): SolverContext
+  def createContext(debugOn: Boolean = false): SolverContext
 }
 
 trait SolverContext {

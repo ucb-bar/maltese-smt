@@ -12,7 +12,7 @@ object Yices2SMTLib extends Solver {
   override def supportsConstArrays = false
   override def supportsUninterpretedFunctions = true
   override def supportsQuantifiers = false
-  override def createContext(): SolverContext = new SMTLibSolverContext(cmd, this)
+  override def createContext(debugOn: Boolean = false): SolverContext = new SMTLibSolverContext(cmd, this, debugOn)
 }
 
 object CVC4SMTLib extends Solver {
@@ -21,7 +21,7 @@ object CVC4SMTLib extends Solver {
   override def supportsConstArrays = true
   override def supportsUninterpretedFunctions = true
   override def supportsQuantifiers = true
-  override def createContext(): SolverContext = new SMTLibSolverContext(cmd, this)
+  override def createContext(debugOn: Boolean = false): SolverContext = new SMTLibSolverContext(cmd, this, debugOn)
 }
 
 object Z3SMTLib extends Solver {
@@ -30,13 +30,11 @@ object Z3SMTLib extends Solver {
   override def supportsConstArrays = true
   override def supportsUninterpretedFunctions = true
   override def supportsQuantifiers = true
-  override def createContext(): SolverContext = new SMTLibSolverContext(cmd, this)
+  override def createContext(debugOn: Boolean = false): SolverContext = new SMTLibSolverContext(cmd, this, debugOn)
 }
 
 /** provides basic facilities to interact with any SMT solver that supports a SMTLib base textual interface */
-private class SMTLibSolverContext(cmd: List[String], val solver: Solver) extends SolverContext {
-  protected val debug: Boolean = false
-
+private class SMTLibSolverContext(cmd: List[String], val solver: Solver, debug: Boolean) extends SolverContext {
   private var _stackDepth: Int = 0
   override def stackDepth: Int = _stackDepth
   override def push(): Unit = {

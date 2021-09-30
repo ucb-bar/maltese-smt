@@ -13,7 +13,7 @@ object Yices2 extends Solver {
   override def supportsConstArrays = false
   override def supportsUninterpretedFunctions = true
 
-  override def createContext(): Yices2 = {
+  override def createContext(debugOn: Boolean = false): Yices2 = {
     val lib = Yices2Api.lib
     val conf = assertNoError(lib.yices_new_config())
     val ctx = assertNoError(lib.yices_new_context(conf))
