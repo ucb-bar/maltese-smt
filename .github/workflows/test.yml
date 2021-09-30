@@ -24,6 +24,9 @@ jobs:
           ls /home/runner/work/oss-cad-suite/bin
           echo "/home/runner/work/oss-cad-suite/bin" >> $GITHUB_PATH
 
+      - name: Install CVC4
+        run: sudo apt-get install -y cvc4
+
       - name: Print Solver Versions and Paths
         run: |
          echo "Yices"
