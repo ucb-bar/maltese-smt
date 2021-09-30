@@ -21,7 +21,7 @@ trait IsModelChecker {
 }
 
 case class Witness(
-  failedBad: Seq[Int],
-  regInit:   Map[Int, BigInt],
-  memInit:   Map[Int, Seq[(Option[BigInt], BigInt)]],
-  inputs:    Seq[Map[Int, BigInt]])
+  failed:  Seq[String],
+  regInit: Map[Int, BigInt],
+  memInit: Map[Int, Seq[(Option[BigInt], BigInt)]],
+  inputs:  Seq[Map[Int, BigInt]])

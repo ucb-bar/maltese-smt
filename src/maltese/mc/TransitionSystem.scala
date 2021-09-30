@@ -14,7 +14,13 @@ case class Signal(name: String, e: SMTExpr, lbl: SignalLabel = IsNode) {
   def toSymbol: SMTSymbol = SMTSymbol.fromExpr(name, e)
   def sym:      SMTSymbol = toSymbol
 }
-case class TransitionSystem(name: String, inputs: List[BVSymbol], states: List[State], signals: List[Signal]) {
+case class TransitionSystem(
+  name:     String,
+  inputs:   List[BVSymbol],
+  states:   List[State],
+  signals:  List[Signal],
+  comments: Map[String, String] = Map(),
+  header:   String = "") {
   def serialize: String = TransitionSystem.serialize(this)
 }
 
@@ -44,14 +50,8 @@ object TransitionSystem {
 
   def serialize(s: State): String = {
     s"state ${s.sym.name} : ${SMTExpr.serializeType(s.sym)}" +
-      (s.init match {
-        case None       => ""
-        case Some(init) => s"\n  [init] ${init}"
-      }) +
-      (s.next match {
-        case None       => ""
-        case Some(next) => s"\n  [next] ${next}"
-      })
+      s.init.map("\n  [init] " + _).getOrElse("") +
+      s.next.map("\n  [next] " + _).getOrElse("")
   }
 
   def getAllNames(sys: TransitionSystem): Seq[String] =
@@ -115,7 +115,7 @@ object TransitionSystem {
   def systemExpressions(sys: TransitionSystem): Iterable[smt.SMTExpr] =
     sys.signals.map(_.e) ++ sys.states.flatMap(s => s.init ++ s.next)
 
-  def findUFs(sys: TransitionSystem): Iterable[smt.DeclareFunction] = {
+  def findUninterpretedFunctions(sys: TransitionSystem): Iterable[smt.DeclareFunction] = {
     val calls = systemExpressions(sys).flatMap(findUFCalls)
     // find unique functions
     calls.groupBy(_.sym.name).map(_._2.head)

@@ -101,9 +101,15 @@ abstract class Btor2ModelChecker extends IsModelChecker {
     // check if it starts with sat
     if (isFail(ret, res)) {
       val witness = Btor2WitnessParser.read(res, 1).head
-      ModelCheckFail(witness)
+      ModelCheckFail(convertWitness(sys, witness))
     } else {
       ModelCheckSuccess()
     }
+  }
+
+  private def convertWitness(sys: TransitionSystem, bw: Btor2Witness): Witness = {
+    val badNames = sys.signals.filter(_.lbl == IsBad).map(_.name).toIndexedSeq
+    val failed = bw.failed.map(badNames)
+    Witness(failed, bw.regInit, bw.memInit, bw.inputs)
   }
 }

@@ -6,10 +6,6 @@ package maltese.smt.solvers
 
 import maltese.smt._
 
-object Solver {
-  type Logic = SMTFeature.ValueSet
-}
-
 trait Solver {
   // basic properties
   def name:                String
@@ -19,18 +15,22 @@ trait Solver {
   def supportsConstArrays:            Boolean
   def supportsUninterpretedFunctions: Boolean
 
+  def createContext(): SolverContext
+}
+
+trait SolverContext {
+  def solver: Solver
+
   // basic API
-  import Solver.Logic
-  def setLogic(logic: Logic): Unit = {
-    require(supportsQuantifiers || logic.contains(SMTFeature.QuantifierFree), s"$name does not support quantifiers!")
-    require(
-      supportsUninterpretedFunctions || !logic.contains(SMTFeature.UninterpretedFunctions),
-      s"$name does not support uninterpreted functions!"
-    )
+  def setLogic(logic: String): Unit = {
+    val quantifierFree = logic.startsWith("QF_")
+    require(solver.supportsQuantifiers || quantifierFree, s"${solver.name} does not support quantifiers!")
+    val ufs = logic.contains("UF")
+    require(solver.supportsUninterpretedFunctions || !ufs, s"${solver.name} does not support uninterpreted functions!")
     doSetLogic(logic)
     pLogic = Some(logic)
   }
-  def getLogic: Option[Logic] = pLogic
+  def getLogic: Option[String] = pLogic
   def stackDepth: Int // returns the size of the push/pop stack
   def push():     Unit
   def pop():      Unit
@@ -50,7 +50,7 @@ trait Solver {
 
   // convenience API
   def check(): SolverResult = check(true)
-  def check(expr: BVExpr): SolverResult = check(expr, true)
+  def check(expr: BVExpr): SolverResult = check(expr, produceModel = true)
   def check(expr: BVExpr, produceModel: Boolean): SolverResult = {
     push()
     assert(expr)
@@ -64,24 +64,9 @@ trait Solver {
   private var pCheckCount = 0
 
   // internal functions that need to be implemented by the solver
-  private var pLogic: Option[Logic] = None
-  protected def doSetLogic(logic:     Logic):   Unit
+  private var pLogic: Option[String] = None
+  protected def doSetLogic(logic:     String):  Unit
   protected def doCheck(produceModel: Boolean): SolverResult
-}
-
-/** SMTLib theories + QF */
-object SMTFeature extends Enumeration {
-  val BitVector, Array, UninterpretedFunctions, QuantifierFree = Value
-  def toName(logic: ValueSet): String = {
-    val a = if (logic.contains(Array)) "A" else ""
-    val uf = if (logic.contains(UninterpretedFunctions)) "UF" else ""
-    val bv = if (logic.contains(BitVector)) "BV" else ""
-    val theories = a + uf + bv
-    require(AllowedTheories.contains(theories), s"Unsupported theory combination: $theories")
-    val prefix = if (logic.contains(QuantifierFree)) "QF_" else ""
-    prefix + theories
-  }
-  private val AllowedTheories = Set("ABV", "AUFBV", "BV", "UF", "UFBV")
 }
 
 sealed trait SolverResult {

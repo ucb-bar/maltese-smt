@@ -7,14 +7,18 @@ package maltese.smt.solvers
 import maltese.smt._
 import scala.collection.mutable
 
-object Yices2 {
-  def apply(logic: Solver.Logic = QF_ABV): Yices2 = {
+object Yices2 extends Solver {
+  override def name = "yices2"
+  override def supportsQuantifiers = false
+  override def supportsConstArrays = false
+  override def supportsUninterpretedFunctions = true
+
+  override def createContext(): Yices2 = {
     val lib = Yices2Api.lib
     val conf = assertNoError(lib.yices_new_config())
     val ctx = assertNoError(lib.yices_new_context(conf))
     val params = assertNoError(lib.yices_new_param_record())
     val y = new Yices2(lib, conf, ctx, params)
-    y.setLogic(logic)
     y
   }
   private def assertNoError[T](v: T): T = { Yices2Api.assertNoError(); v }
@@ -22,11 +26,9 @@ object Yices2 {
 }
 
 class Yices2 private (lib: Yices2Api, conf: Yices2Api.ConfigT, ctx: Yices2Api.ContextT, params: Yices2Api.ParamsT)
-    extends Solver {
-  override def name = "yices2"
-  override def supportsQuantifiers = false
-  override def supportsConstArrays = false
-  override def supportsUninterpretedFunctions = true
+    extends SolverContext {
+
+  override def solver = Yices2
 
   import Yices2.{assertNoError, bitArrayToBigInt}
 
@@ -55,7 +57,7 @@ class Yices2 private (lib: Yices2Api, conf: Yices2Api.ConfigT, ctx: Yices2Api.Co
     case Comment(_)                            => // ignore
     case SetLogic(logic)                       => setLogic(logic)
     case DefineFunction(name, args, e)         => ???
-    case DeclareFunction(sym, args)            => ???
+    case DeclareFunction(sym, args)            => // ignore
     case DeclareUninterpretedSort(name)        => ???
     case DeclareUninterpretedSymbol(name, tpe) => ???
   }
@@ -73,7 +75,7 @@ class Yices2 private (lib: Yices2Api, conf: Yices2Api.ConfigT, ctx: Yices2Api.Co
   private val symbols = new mutable.HashMap[String, SymbolInfo]
   private var model: Option[Yices2Api.ModelT] = None
 
-  override protected def doSetLogic(logic: Solver.Logic): Unit = {
+  override protected def doSetLogic(logic: String): Unit = {
     // TODO: is there a way to construct a solver for a particular logic?
     //lib.yices_default_config_for_logic(conf, "QF_AUFBV")
   }

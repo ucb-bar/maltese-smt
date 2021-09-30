@@ -7,6 +7,12 @@ package maltese.mc
 import scala.collection.mutable
 import scala.util.control.Breaks._
 
+case class Btor2Witness(
+  failed:  Seq[Int],
+  regInit: Map[Int, BigInt],
+  memInit: Map[Int, Seq[(Option[BigInt], BigInt)]],
+  inputs:  Seq[Map[Int, BigInt]])
+
 object Btor2WitnessParser {
   private trait State
   private case class Start() extends State
@@ -16,9 +22,9 @@ object Btor2WitnessParser {
   private case class Inputs(ii: Int) extends State
   private case class Assignment(ii: Int, value: BigInt, index: Option[BigInt], symbol: String, isArray: Boolean)
 
-  def read(lines: Iterable[String], parseMax: Int = 1): Seq[Witness] = {
+  def read(lines: Iterable[String], parseMax: Int = 1): Seq[Btor2Witness] = {
     var state: State = Start()
-    val witnesses = mutable.ArrayBuffer[Witness]()
+    val witnesses = mutable.ArrayBuffer[Btor2Witness]()
     // work in progress witness
     var failedBad: Seq[Int] = Seq()
     val regInit = mutable.HashMap[Int, BigInt]()
@@ -58,7 +64,7 @@ object Btor2WitnessParser {
 
       def finishWitness(): State = {
         witnesses.append(
-          Witness(failedBad = failedBad, regInit = regInit.toMap, memInit = memInit.toMap, inputs = allInputs.toSeq)
+          Btor2Witness(failed = failedBad, regInit = regInit.toMap, memInit = memInit.toMap, inputs = allInputs.toSeq)
         )
         regInit.clear()
         memInit.clear()

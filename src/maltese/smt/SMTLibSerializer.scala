@@ -94,7 +94,7 @@ object SMTLibSerializer {
     case DeclareFunction(sym, tpes) =>
       val aa = tpes.map(serializeArgTpe).mkString(" ")
       s"(declare-fun ${escapeIdentifier(sym.name)} ($aa) ${serialize(sym.tpe)})"
-    case SetLogic(logic) => s"(set-logic ${SMTFeature.toName(logic)})"
+    case SetLogic(logic) => s"(set-logic $logic)"
     case DeclareUninterpretedSymbol(name, tpe) =>
       s"(declare-fun ${escapeIdentifier(name)} () ${escapeIdentifier(tpe)})"
   }
