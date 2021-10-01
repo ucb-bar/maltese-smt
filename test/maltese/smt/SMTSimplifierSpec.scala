@@ -122,6 +122,22 @@ class SMTSimplifierSpec extends SMTSimplifierBaseSpec {
     val a = bv("a", 4)
     assert(simplify(BVExtend(BVExtend(a, 4, true), 3, true)) == BVExtend(a, 7, true))
   }
+
+  it should "simplify a slice on a sign extension" in {
+    val a = bv("a", 4)
+    assert(simplify(BVSlice(BVExtend(a, 2, true), 3, 0)) == a)
+    assert(simplify(BVSlice(BVExtend(a, 2, true), 3, 1)) == BVSlice(a, 3, 1))
+    assert(simplify(BVSlice(BVExtend(a, 2, true), 2, 1)) == BVSlice(a, 2, 1))
+    assert(simplify(BVSlice(BVExtend(a, 2, true), 4, 0)) == BVExtend(a, 1, true))
+    assert(simplify(BVSlice(BVExtend(a, 2, true), 5, 0)) == BVExtend(a, 2, true))
+    assert(simplify(BVSlice(BVExtend(a, 2, true), 4, 1)) == BVExtend(BVSlice(a, 3, 1), 1, true))
+  }
+
+  it should "simplify add with zero" in {
+    val a = bv("a", 4)
+    assert(simplify(BVOp(Op.Add, a, BVLiteral(0, 4))) == a)
+    assert(simplify(BVOp(Op.Add, BVLiteral(0, 4), a)) == a)
+  }
 }
 
 abstract class SMTSimplifierBaseSpec extends AnyFlatSpec {

@@ -98,6 +98,8 @@ object SMTSimplifier {
           else {
             simplifyBVConcat(BVConcat(BVLiteral(0, by.value.toInt), BVSlice(e, e.width - 1, by.value.toInt)))
           }
+        case BVOp(Op.Add, e, lit: BVLiteral) if lit.value == 0 => e
+        case BVOp(Op.Add, lit: BVLiteral, e) if lit.value == 0 => e
         case other => other
       }
     }
@@ -167,6 +169,14 @@ object SMTSimplifier {
     // push slice into ite (this can enable new simplifications)
     case BVSlice(BVIte(cond, tru, fals), hi, lo) =>
       simplify(BVIte(cond, BVSlice(tru, hi, lo), BVSlice(fals, hi, lo))).asInstanceOf[BVExpr]
+    // push slice into sign extend (this can enable new simplifications)
+    case o @ BVSlice(BVExtend(e, by, true), hi, lo) =>
+      if (hi < e.width) {
+        simplifySlice(BVSlice(e, hi, lo))
+      } else {
+        val inner = simplifySlice(BVSlice(e, e.width - 1, lo))
+        BVExtend(inner, hi - e.width + 1, true)
+      }
     case other => other
   }
 
