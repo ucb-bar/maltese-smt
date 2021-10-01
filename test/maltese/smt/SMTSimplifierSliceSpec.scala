@@ -80,4 +80,11 @@ class SMTSimplifierSliceSpec extends SMTSimplifierBaseSpec {
     val (a, b, c) = (bv("a", 4), bv("b", 4), bv("c", 1))
     assert(simplify(BVSlice(BVIte(c, a, b), 0, 0)).toString == "ite(c, a[0], b[0])")
   }
+
+  it should "simplify concatenation of adjacent slices" in {
+    val a = bv("a", 32)
+
+    assert(simplify(BVConcat(BVSlice(a, 20, 19), BVSlice(a, 18, 0))) == BVSlice(a, 20, 0))
+    assert(simplify(BVConcat(BVSlice(a, 31, 19), BVSlice(a, 18, 0))) == a)
+  }
 }

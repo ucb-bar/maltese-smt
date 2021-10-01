@@ -9,14 +9,15 @@ object SMTSimplifier {
   /** Recursively simplifies expressions from bottom to top. */
   def simplify(expr: SMTExpr): SMTExpr = expr.mapExpr(simplify) match {
     // constant folding
-    case u:  BVUnaryExpr if isLit(u.e)                => constantFold(u)
-    case b:  BVBinaryExpr if isLit(b.a) && isLit(b.b) => constantFold(b)
-    case op: BVOp                                     => simplifyOp(op)
-    case eq: BVEqual                                  => simplifyBVEqual(eq)
-    case BVExtend(e, 0, _) => e
-    case slice: BVSlice => simplifySlice(slice)
+    case u:     BVUnaryExpr if isLit(u.e)                => constantFold(u)
+    case b:     BVBinaryExpr if isLit(b.a) && isLit(b.b) => constantFold(b)
+    case op:    BVOp                                     => simplifyOp(op)
+    case eq:    BVEqual                                  => simplifyBVEqual(eq)
+    case e:     BVExtend                                 => simplifyExtend(e)
+    case slice: BVSlice                                  => simplifySlice(slice)
     case BVNot(BVNot(e)) => e
-    case ite: BVIte => simplifyBVIte(ite)
+    case ite: BVIte    => simplifyBVIte(ite)
+    case cat: BVConcat => simplifyBVConcat(cat)
     case other => other
   }
 
@@ -71,12 +72,32 @@ object SMTSimplifier {
     case _                                                           => i
   }
 
+  private def simplifyExtend(expr: BVExtend): BVExpr = expr match {
+    case BVExtend(e, 0, _)                           => e
+    case BVExtend(e, by, false)                      => simplifyBVConcat(BVConcat(BVLiteral(0, by), e))
+    case BVExtend(BVExtend(e, by0, true), by1, true) => BVExtend(e, by0 + by1, true)
+    case other                                       => other
+  }
+
   private def simplifyOp(expr: BVOp): BVExpr = {
     if (expr.width == 1) { simplifyBoolOp(expr) }
     else {
       expr match {
         case BVOp(Op.And, a, mask: BVLiteral) => simplifyBitMask(expr, a, mask.value)
         case BVOp(Op.And, mask: BVLiteral, a) => simplifyBitMask(expr, a, mask.value)
+        case BVOp(Op.ShiftLeft, e, by: BVLiteral) =>
+          if (by.value == 0) { e }
+          else if (by.value >= e.width) { BVLiteral(0, e.width) }
+          else {
+            simplifyBVConcat(BVConcat(BVSlice(e, e.width - 1 - by.value.toInt, 0), BVLiteral(0, by.value.toInt)))
+          }
+        case BVOp(Op.ShiftRight, e, by: BVLiteral) =>
+          if (by.value == 0) { e }
+          else if (by.value >= e.width) { BVLiteral(0, e.width) }
+          else if (by.value >= e.width) { BVLiteral(0, e.width) }
+          else {
+            simplifyBVConcat(BVConcat(BVLiteral(0, by.value.toInt), BVSlice(e, e.width - 1, by.value.toInt)))
+          }
         case other => other
       }
     }
@@ -123,6 +144,15 @@ object SMTSimplifier {
         }
       } :+ (width - 1, lsb, lastBit)
     }
+
+  private def simplifyBVConcat(concat: BVConcat): BVExpr = concat match {
+    case BVConcat(BVSlice(e1, hi1, lo1), BVSlice(e2, hi2, lo2)) if lo1 == hi2 + 1 && e1 == e2 =>
+      simplifySlice(BVSlice(e1, hi1, lo2))
+    case BVConcat(c0: BVLiteral, BVConcat(c1: BVLiteral, inner)) =>
+      val c = BVLiteral(SMTExprEval.doBVConcat(c0.value, c1.value, bWidth = c1.width), c0.width + c1.width)
+      BVConcat(c, inner)
+    case other => other
+  }
 
   private def simplifySlice(expr: BVSlice): BVExpr = expr match {
     // no-op

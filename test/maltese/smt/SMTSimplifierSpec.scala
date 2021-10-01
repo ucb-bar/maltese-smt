@@ -95,6 +95,33 @@ class SMTSimplifierSpec extends SMTSimplifierBaseSpec {
     assert(simplify(BVOp(Op.And, BVConcat(a, b), BVLiteral("b00010"))).toString == "concat(concat(3'b0, b[1]), 1'b0)")
     assert(simplify(BVOp(Op.And, BVConcat(a, b), BVLiteral("b00001"))).toString == "concat(4'b0, b[0])")
   }
+
+  it should "simplify shifts by constants" in {
+    val a = bv("a", 32)
+
+    assert(simplify(BVOp(Op.ShiftLeft, a, BVLiteral(0, 32))) == a)
+    assert(simplify(BVOp(Op.ShiftLeft, a, BVLiteral(4, 32))) == BVConcat(BVSlice(a, 27, 0), BVLiteral(0, 4)))
+    assert(simplify(BVOp(Op.ShiftRight, a, BVLiteral(0, 32))) == a)
+    assert(simplify(BVOp(Op.ShiftRight, a, BVLiteral(4, 32))) == BVConcat(BVLiteral(0, 4), BVSlice(a, 31, 4)))
+  }
+
+  it should "turn zero extension into a concat" in {
+    val a = bv("a", 4)
+
+    assert(simplify(BVExtend(a, 4, false)) == BVConcat(BVLiteral(0, 4), a))
+    assert(simplify(BVExtend(a, 0, false)) == a)
+  }
+
+  it should "turn multiple zero extensions into a single concat" in {
+    val a = bv("a", 4)
+
+    assert(simplify(BVExtend(BVExtend(a, 4, false), 3, false)) == BVConcat(BVLiteral(0, 7), a))
+  }
+
+  it should "combine multiple sign extensions" in {
+    val a = bv("a", 4)
+    assert(simplify(BVExtend(BVExtend(a, 4, true), 3, true)) == BVExtend(a, 7, true))
+  }
 }
 
 abstract class SMTSimplifierBaseSpec extends AnyFlatSpec {
